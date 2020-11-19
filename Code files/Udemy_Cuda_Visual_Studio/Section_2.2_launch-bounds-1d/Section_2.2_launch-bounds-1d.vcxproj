@@ -11,11 +11,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <CudaCompile Include="array-add.cu" />
+    <CudaCompile Include="launch-bounds-1d.cu" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
-    <ProjectGuid>{C1E3D8B2-0EFD-4C03-8D49-60BC1C92DA21}</ProjectGuid>
-    <RootNamespace>Section_01</RootNamespace>
+    <ProjectGuid>{08D10EDC-FEF7-415F-B094-2A556B3BF9BF}</ProjectGuid>
+    <RootNamespace>Section_2_2_launch_bounds_1d</RootNamespace>
     <WindowsTargetPlatformVersion>10.0.17763.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
