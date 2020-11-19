@@ -52,31 +52,26 @@ int main()
   cudaCheckError(cudaMalloc(&device_array_dest, sizeof(host_array_dest)));
 
   // Transfer data to device
-  cudaCheckError(cudaMemcpy(device_array_a, host_array_a, sizeof(host_array_a),
-                            cudaMemcpyHostToDevice));
-  cudaCheckError(cudaMemcpy(device_array_b, host_array_b, sizeof(host_array_b),
-                            cudaMemcpyHostToDevice));
+  cudaCheckError(cudaMemcpy(device_array_a, host_array_a, sizeof(host_array_a), cudaMemcpyHostToDevice));
+  cudaCheckError(cudaMemcpy(device_array_b, host_array_b, sizeof(host_array_b), cudaMemcpyHostToDevice));
 
   // Calculate lauch configuration
   const int BLOCK_SIZE = 128;
   int n_blocks = (ARRAY_LENGTH + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
   // Add arrays on device
-  add_kernel<<<n_blocks, BLOCK_SIZE>>>(device_array_dest, ARRAY_LENGTH,
-                                       device_array_a, nullptr);
+  add_kernel<<<n_blocks, BLOCK_SIZE>>>(device_array_dest, ARRAY_LENGTH, device_array_a, nullptr);
 
   // Meanwhile, add arrays on the host, for comparison
   add_loop(host_array_dest, ARRAY_LENGTH, host_array_a, host_array_b);
 
   // Copy result back to host and compare
   float host_array_tmp[ARRAY_LENGTH];
-  cudaCheckError(cudaMemcpy(host_array_tmp, device_array_dest,
-                            sizeof(host_array_tmp), cudaMemcpyDeviceToHost));
+  cudaCheckError(cudaMemcpy(host_array_tmp, device_array_dest, sizeof(host_array_tmp), cudaMemcpyDeviceToHost));
 
   for (int i = 0; i < ARRAY_LENGTH; i++) {
     assert(host_array_tmp[i] == host_array_dest[i]);
-    printf("%g + %g = %g\n", host_array_a[i], host_array_b[i],
-           host_array_tmp[i]);
+    printf("%g + %g = %g\n", host_array_a[i], host_array_b[i], host_array_tmp[i]);
   }
 
   return 0;
