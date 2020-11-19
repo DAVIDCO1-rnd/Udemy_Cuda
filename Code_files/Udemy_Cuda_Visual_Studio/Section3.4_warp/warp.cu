@@ -10,7 +10,7 @@
 // Standard CUDA API functions
 #include <cuda_runtime_api.h>
 
-#include "../utils.h"
+#include "utils.h"
 
 struct warp_params {
   float matrix[4];

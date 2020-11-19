@@ -1,7 +1,7 @@
 // Utility functions for example programs.
 
 #include <assert.h>
-#include <getopt.h>
+//#include <getopt.h>
 #include <cstring>
 #include <fstream>
 #include <iostream>

@@ -9,7 +9,7 @@
 // Standard CUDA API functions
 #include <cuda_runtime_api.h>
 
-#include "../utils.h"
+#include "utils.h"
 
 struct light {
   float x;

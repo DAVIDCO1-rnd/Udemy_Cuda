@@ -12,6 +12,10 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="manylights-const.cu" />
+    <CudaCompile Include="utils.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{C6BD7DB5-0F47-47FC-B433-B5974E068812}</ProjectGuid>

@@ -11,7 +11,11 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <CudaCompile Include="utils.cu" />
     <CudaCompile Include="warp-texture.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{4A37FF8E-02F9-45DD-93CD-54173FF11B35}</ProjectGuid>

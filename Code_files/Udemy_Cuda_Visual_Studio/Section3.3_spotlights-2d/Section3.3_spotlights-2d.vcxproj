@@ -12,6 +12,10 @@
   </ItemGroup>
   <ItemGroup>
     <CudaCompile Include="spotlights-2d.cu" />
+    <CudaCompile Include="utils.cu" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="utils.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{5C6BA21B-591C-4858-99E8-42FF8F5EF57D}</ProjectGuid>
