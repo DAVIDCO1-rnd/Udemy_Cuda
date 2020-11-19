@@ -26,7 +26,7 @@ __global__ void good() {}
 int main()
 {
   int *foo = nullptr;
-  size_t size = 1lu << 33;
+  size_t size = 1lu << 31;
   cudaError_t status = cudaMalloc(&foo, size);
   const char *message = cudaGetErrorString(status);
 
