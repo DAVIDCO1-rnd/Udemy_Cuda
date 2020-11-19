@@ -13,6 +13,12 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Section2.2_launch-bounds-2d
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Section_2.2_occupancy-api", "Section_2.2_occupancy-api\Section_2.2_occupancy-api.vcxproj", "{837E3E71-329C-4FBF-B97F-CB7F11A67FC8}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Section2.3_array-add-bug", "Section2.3_array-add-bug\Section2.3_array-add-bug.vcxproj", "{826F5FBA-9E81-4FD9-91E3-56109EB6C36A}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Section2.4_array-add-bug", "Section2.4_array-add-bug\Section2.4_array-add-bug.vcxproj", "{6993D3E2-B8AA-4120-B4AF-55DBC3020B83}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Section2.5_error-handling", "Section2.5_error-handling\Section2.5_error-handling.vcxproj", "{EBBE273E-41A4-4B88-BEE6-C9C8074E9CE2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -39,6 +45,18 @@ Global
 		{837E3E71-329C-4FBF-B97F-CB7F11A67FC8}.Debug|x64.Build.0 = Debug|x64
 		{837E3E71-329C-4FBF-B97F-CB7F11A67FC8}.Release|x64.ActiveCfg = Release|x64
 		{837E3E71-329C-4FBF-B97F-CB7F11A67FC8}.Release|x64.Build.0 = Release|x64
+		{826F5FBA-9E81-4FD9-91E3-56109EB6C36A}.Debug|x64.ActiveCfg = Debug|x64
+		{826F5FBA-9E81-4FD9-91E3-56109EB6C36A}.Debug|x64.Build.0 = Debug|x64
+		{826F5FBA-9E81-4FD9-91E3-56109EB6C36A}.Release|x64.ActiveCfg = Release|x64
+		{826F5FBA-9E81-4FD9-91E3-56109EB6C36A}.Release|x64.Build.0 = Release|x64
+		{6993D3E2-B8AA-4120-B4AF-55DBC3020B83}.Debug|x64.ActiveCfg = Debug|x64
+		{6993D3E2-B8AA-4120-B4AF-55DBC3020B83}.Debug|x64.Build.0 = Debug|x64
+		{6993D3E2-B8AA-4120-B4AF-55DBC3020B83}.Release|x64.ActiveCfg = Release|x64
+		{6993D3E2-B8AA-4120-B4AF-55DBC3020B83}.Release|x64.Build.0 = Release|x64
+		{EBBE273E-41A4-4B88-BEE6-C9C8074E9CE2}.Debug|x64.ActiveCfg = Debug|x64
+		{EBBE273E-41A4-4B88-BEE6-C9C8074E9CE2}.Debug|x64.Build.0 = Debug|x64
+		{EBBE273E-41A4-4B88-BEE6-C9C8074E9CE2}.Release|x64.ActiveCfg = Release|x64
+		{EBBE273E-41A4-4B88-BEE6-C9C8074E9CE2}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
