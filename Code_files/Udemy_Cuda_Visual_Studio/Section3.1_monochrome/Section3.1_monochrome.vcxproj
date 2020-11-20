@@ -17,6 +17,9 @@
   <ItemGroup>
     <ClInclude Include="utils.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="bridge.ppm" />
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{3AD7F1D6-2565-4B1B-882A-E03F441A482B}</ProjectGuid>
     <RootNamespace>Section3_1_monochrome</RootNamespace>

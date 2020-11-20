@@ -25,7 +25,13 @@ __global__ void monochrome(const pixel *source, pixel *dest, int size)
 
 int main(int argc, char **argv)
 {
-  test_params params = set_up_test(argc, argv);
+	//char* exe_path = "C:\\Users\\David Cohn\\Documents\\Github\\Udemy_Cuda\\Code_files\\Udemy_Cuda_Visual_Studio\\x64\\Debug\\Section3.1_monochrome.exe";
+	//char* input_image_path = "C:\\Users\\David Cohn\\Documents\\Github\\Udemy_Cuda\\Code_files\\Udemy_Cuda_Visual_Studio\\Section3.1_monochrome\\bridge.ppm";
+	//char* output_image_path = "C:\\Users\\David Cohn\\Documents\\Github\\Udemy_Cuda\\Code_files\\Udemy_Cuda_Visual_Studio\\Section3.1_monochrome\\out.ppm";
+	//char* paths[3] = { exe_path , input_image_path , output_image_path };
+ // test_params params = set_up_test(3, paths);
+
+	test_params params = set_up_test(argc, argv);
 
   int pixel_count = params.width * params.height;
   int BLOCK_SIZE = 128;
