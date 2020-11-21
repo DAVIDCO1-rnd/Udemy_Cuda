@@ -13,7 +13,7 @@
 // CUDA cooperative groups API
 #include <cooperative_groups.h>
 
-#include "../utils.h"
+#include "utils.h"
 
 void scan_reference(const int *source, int *dest, unsigned int count)
 {

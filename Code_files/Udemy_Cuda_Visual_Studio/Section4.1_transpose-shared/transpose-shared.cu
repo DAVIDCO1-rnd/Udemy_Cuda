@@ -10,7 +10,7 @@
 // CUDA cooperative groups API
 #include <cooperative_groups.h>
 
-#include "../utils.h"
+#include "utils.h"
 
 const int TILE_DIM = 16;
 

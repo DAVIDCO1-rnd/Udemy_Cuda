@@ -15,7 +15,7 @@
 // CUDA cooperative groups API
 #include <cooperative_groups.h>
 
-#include "../utils.h"
+#include "utils.h"
 
 __device__ unsigned int blocks_finished = 0;
 // Wait for all blocks in the grid to execute this function.

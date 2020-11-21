@@ -15,7 +15,7 @@
 // CUDA cooperative groups API
 #include <cooperative_groups.h>
 
-#include "../utils.h"
+#include "utils.h"
 
 __host__ __device__ bool divisible_by_three(int value)
 {
