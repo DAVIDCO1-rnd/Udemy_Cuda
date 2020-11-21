@@ -10,3 +10,4 @@
 *.lib
 *.ppm
 **/Cuda_workspace/
+**/workspace/
