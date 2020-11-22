@@ -1,0 +1,80 @@
+
+https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html
+
+nvcc -lineinfo -o utils.lib -c utils.cu
+nvcc -lineinfo -o monochrome monochrome.cu utils.lib
+nvvp monochrome.exe bridge.ppm out.ppm
+
+
+
+nvcc -lineinfo -o utils.lib -c utils.cu
+nvcc -lineinfo -o spotlights spotlights.cu utils.lib
+nvvp spotlights.exe ../bridge.ppm out.ppm
+
+
+nvcc -lineinfo -o utils.lib -c utils.cu
+nvcc -lineinfo -o spotlights-2d spotlights-2d.cu utils.lib
+spotlights-2d.exe ../bridge.ppm out.ppm
+nvvp spotlights-2d.exe ../bridge.ppm out.ppm
+
+
+nvcc -lineinfo -o utils.lib -c utils.cu
+nvcc -lineinfo -o manylights1 manylights1.cu utils.lib
+manylights1.exe ../bridge.ppm out.ppm
+nvvp manylights1.exe ../bridge.ppm out.ppm
+
+
+nvcc -lineinfo -o utils.lib -c utils.cu
+nvcc -lineinfo -o manylights2 manylights2.cu utils.lib
+manylights2.exe ../bridge.ppm out.ppm
+nvvp manylights2.exe ../bridge.ppm out.ppm
+
+
+nvcc -lineinfo -o utils.lib -c utils.cu
+nvcc -lineinfo -o manylights-const manylights-const.cu utils.lib
+manylights-const.exe ../bridge.ppm out.ppm
+nvvp manylights-const.exe ../bridge.ppm out.ppm
+
+
+nvcc -lineinfo -o utils.lib -c utils.cu
+nvcc -lineinfo -o warp warp.cu utils.lib
+warp.exe ../bridge.ppm out.ppm
+nvvp warp.exe ../bridge.ppm out.ppm
+
+
+nvcc -lineinfo -o utils.lib -c utils.cu
+nvcc -lineinfo -o warp-texture warp-texture.cu utils.lib
+warp-texture.exe ../bridge.ppm out.ppm
+nvvp warp-texture.exe ../bridge.ppm out.ppm
+
+nvcc -lineinfo -o utils.lib -c utils.cu
+nvcc -lineinfo -o manylights-ilp manylights-ilp.cu utils.lib
+manylights-ilp.exe ../bridge.ppm out.ppm
+nvvp manylights-ilp.exe ../bridge.ppm out.ppm
+
+nvcc -lineinfo -o kernel kernel.cu
+kernel.exe
+
+
+nvcc -lineinfo -o utils.lib -c utils.cu
+nvcc -lineinfo -o transpose transpose.cu utils.lib
+transpose.exe
+nvvp transpose.exe
+
+
+nvcc -lineinfo -o utils.lib -c utils.cu
+nvcc -lineinfo -o transpose-shared transpose-shared.cu utils.lib
+transpose-shared.exe
+nvvp transpose-shared.exe
+
+
+
+
+
+
+
+
+
+
+
+
