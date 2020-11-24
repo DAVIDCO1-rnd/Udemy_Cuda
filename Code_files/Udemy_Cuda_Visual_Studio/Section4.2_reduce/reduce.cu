@@ -22,15 +22,19 @@ __device__ unsigned int blocks_finished = 0;
 __device__ bool wait_for_all_blocks()
 {
   // Wait until global write is visible to all other blocks
-  __threadfence();
+  __threadfence(); //the current thread is waiting until all its writes are visible to other threads (in other blocks I think)
 
   // Wait for all blocks to finish by atomically incrementing a counter
   bool is_last = false;
-  if (threadIdx.x == 0) {
+  //first thread of each block increments (atomically) a counter.
+  //when the counter equals the number of blocks (gridDim.x), we know that every thread has passed the threadfence.
+  //it means that the last thread can see all the writes to global memory.
+  if (threadIdx.x == 0) { 
     unsigned int ticket = atomicInc(&blocks_finished, gridDim.x);
     is_last = (ticket == gridDim.x - 1);
   }
   if (is_last) {
+	  //we reset the counter so the function will work correctly in the next kernel launch
     blocks_finished = 0;
   }
   return is_last;
@@ -106,8 +110,7 @@ int main(int argc, char **argv)
   int *source_dev, *dest_dev;
   size_t size = COUNT * sizeof(int);
   cudaCheckError(cudaMalloc(&source_dev, size));
-  cudaCheckError(
-      cudaMemcpy(source_dev, source.get(), size, cudaMemcpyHostToDevice));
+  cudaCheckError(cudaMemcpy(source_dev, source.get(), size, cudaMemcpyHostToDevice));
 
   // Run the kernel
   int BLOCK_SIZE = 128;

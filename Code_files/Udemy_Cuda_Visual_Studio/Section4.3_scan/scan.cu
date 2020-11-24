@@ -115,8 +115,7 @@ int main(int argc, char **argv)
   int *source_dev, *dest_dev;
   size_t size = COUNT * sizeof(int);
   cudaCheckError(cudaMalloc(&source_dev, size));
-  cudaCheckError(
-      cudaMemcpy(source_dev, source.get(), size, cudaMemcpyHostToDevice));
+  cudaCheckError(cudaMemcpy(source_dev, source.get(), size, cudaMemcpyHostToDevice));
   cudaCheckError(cudaMalloc(&dest_dev, size));
 
   int n_blocks1 = (COUNT + BLOCK_SIZE - 1) / BLOCK_SIZE;
@@ -141,8 +140,7 @@ int main(int argc, char **argv)
   }
 
   // Copy result back to the host
-  cudaCheckError(
-      cudaMemcpy(dest.get(), dest_dev, size, cudaMemcpyDeviceToHost));
+  cudaCheckError(cudaMemcpy(dest.get(), dest_dev, size, cudaMemcpyDeviceToHost));
   cudaCheckError(cudaFree(source_dev));
   cudaCheckError(cudaFree(dest_dev));
   cudaCheckError(cudaFree(block_sums));
