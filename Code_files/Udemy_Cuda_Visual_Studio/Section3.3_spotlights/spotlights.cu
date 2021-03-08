@@ -36,12 +36,11 @@ __device__ float light_brightness(float x, float y, unsigned int width,
   float distance = sqrtf(distance_squared);
 
   float scaled_distance = distance / light.radius;
-  return light.brightness;
-  //if (scaled_distance > 0.8) {
-  //  return (1.0f - (scaled_distance - 0.8f) * 5.0f) * light.brightness;
-  //} else {
-  //  return light.brightness;
-  //}
+  if (scaled_distance > 0.8) {
+    return (1.0f - (scaled_distance - 0.8f) * 5.0f) * light.brightness;
+  } else {
+    return light.brightness;
+  }
 }
 
 //__global__ void spotlights(const image source, image dest, unsigned int width,
@@ -82,9 +81,10 @@ __global__ void spotlights(const image source, image dest, unsigned int width,
 
 int main(int argc, char **argv)
 {
-	char command_name[11] = "spotlights";
-	char input_image_name[14] = "../bridge.ppm";
-	char output_image_name[11] = "output.ppm";
+	char command_name[] = "spotlights";
+	//char input_image_name[] = "../bridge.ppm";
+	char input_image_name[] = "unity_frame.jpg";
+	char output_image_name[] = "output_unity_frame.ppm";
 	char* my_argv[3];
 	my_argv[0] = command_name;
 	my_argv[1] = input_image_name;
@@ -95,7 +95,7 @@ int main(int argc, char **argv)
 
 	float light1_x = 0.5f;
 	float light1_y = 0.5f;
-	float light1_radius = 0.1f;
+	float light1_radius = 0.3f;
 	float light1_brightness = 1.0;
   light light1 = { light1_x, light1_y, light1_radius, light1_brightness };
   //light light2 = {0.25, 0.2, 0.075, 2.0};

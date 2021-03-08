@@ -15,7 +15,11 @@
     <CudaCompile Include="utils.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="stb_image.h" />
     <ClInclude Include="utils.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="stb_image.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <ProjectGuid>{F9046A65-4E51-41E7-81E5-EBC2F86642D9}</ProjectGuid>

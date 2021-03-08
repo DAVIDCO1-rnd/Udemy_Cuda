@@ -1,5 +1,6 @@
 // Utility functions for example programs.
 
+#include "stb_image.h"
 #include <assert.h>
 //#include <getopt.h>
 #include <cstring>
@@ -11,8 +12,57 @@
 
 #include "utils.h"
 
+using std::string;
+
 const unsigned int HEADER_SIZE = 0x40;
 const unsigned int CHANNELS = 3;
+
+bool loadJPG(char *filePath, pixel **data, unsigned int *w, unsigned int *h)
+{
+	int width, height, textureNumOfChannels;
+	unsigned char *textureData = stbi_load(filePath, &width, &height, &textureNumOfChannels, 0);
+	*w = (unsigned int)width;
+	*h = (unsigned int)height;
+	if (textureData)
+	{
+		int pixel_count = width * height;
+		pixel *pixel_data = static_cast<pixel *>(malloc(pixel_count * sizeof(pixel)));
+		int inputCounter = 0;
+		int outputCounter = 0;
+		float scale = 1.0f / 255.0f;
+		for (int i = 0 ; i < width ; i++)
+		{
+			for (int j = 0 ; j < height ; j++)
+			{
+				unsigned char red_char = textureData[inputCounter];
+				inputCounter++;
+								
+				unsigned char green_char = textureData[inputCounter];
+				inputCounter++;
+							
+				unsigned char blue_char = textureData[inputCounter];
+				inputCounter++;
+
+				float red = (float)red_char * scale;
+				float green = (float)green_char * scale;
+				float blue = (float)blue_char * scale;
+
+				pixel_data[outputCounter].red = red;
+				pixel_data[outputCounter].green = green;
+				pixel_data[outputCounter].blue = blue;
+				pixel_data[outputCounter].alpha = 1.0f;
+				outputCounter++;
+			}
+		}
+		*data = pixel_data;
+		return true;
+	}
+	else
+	{
+		std::cout << "Failed to load texture" << std::endl;
+		return false;
+	}
+}
 
 bool loadPPM(const char *file, pixel **data, unsigned int *w, unsigned int *h)
 {
@@ -132,10 +182,17 @@ test_params set_up_test(int argc, char **argv)
       break;
     } else if (params.input_image == nullptr) {
       // Load input
-      pixel *host_image = nullptr;
-      if (!loadPPM(current, &host_image, &params.width, &params.height)) {
-        exit(1);
-      }
+      //pixel *host_image = nullptr;
+      //if (!loadPPM(current, &host_image, &params.width, &params.height)) {
+      //  exit(1);
+      //}
+
+	  pixel *host_image = nullptr;
+	  if (!loadJPG(current, &host_image, &params.width, &params.height)) {
+		  exit(1);
+	  }
+
+	 
 
       size_t image_size = params.width * params.height * sizeof(pixel);
       cudaCheckError(cudaMalloc(&params.input_image, image_size));
@@ -164,6 +221,39 @@ test_params set_up_test(int argc, char **argv)
   return params;
 }
 
+//void savePixels(string filename, char* pixelsData, int PictureWidth, int PictureHeight)
+//{
+//	FILE *Out = fopen(filename.c_str(), "wb");
+//	if (!Out)
+//		return;
+//	int nSize = PictureWidth * PictureHeight * 3;
+//	BITMAPFILEHEADER bitmapFileHeader;
+//	BITMAPINFOHEADER bitmapInfoHeader;
+//
+//	bitmapFileHeader.bfType = 0x4D42;
+//	bitmapFileHeader.bfSize = nSize;
+//	bitmapFileHeader.bfReserved1 = 0;
+//	bitmapFileHeader.bfReserved2 = 0;
+//	bitmapFileHeader.bfOffBits = sizeof(BITMAPFILEHEADER) + sizeof(BITMAPINFOHEADER);
+//
+//	bitmapInfoHeader.biSize = sizeof(BITMAPINFOHEADER);
+//	bitmapInfoHeader.biWidth = PictureWidth - 1;
+//	bitmapInfoHeader.biHeight = PictureHeight - 1;
+//	bitmapInfoHeader.biPlanes = 1;
+//	bitmapInfoHeader.biBitCount = 24;
+//	bitmapInfoHeader.biCompression = BI_RGB;
+//	bitmapInfoHeader.biSizeImage = 0;
+//	bitmapInfoHeader.biXPelsPerMeter = 0; // ?
+//	bitmapInfoHeader.biYPelsPerMeter = 0; // ?
+//	bitmapInfoHeader.biClrUsed = 0;
+//	bitmapInfoHeader.biClrImportant = 0;
+//
+//	fwrite(&bitmapFileHeader, sizeof(BITMAPFILEHEADER), 1, Out);
+//	fwrite(&bitmapInfoHeader, sizeof(BITMAPINFOHEADER), 1, Out);
+//	fwrite(pixelsData, nSize, 1, Out);
+//	fclose(Out);
+//}
+
 void finish_test(const test_params &params)
 {
   std::unique_ptr<pixel[]> host_image(new pixel[params.width * params.height]);
@@ -178,6 +268,7 @@ void finish_test(const test_params &params)
     cudaCheckError(cudaFree(params.output_image));
   }
 
+  //savePixels(params.output_file, host_image.get(), params.width, params.height);
   savePPM(params.output_file, host_image.get(), params.width, params.height);
 }
 
