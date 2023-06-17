@@ -19,67 +19,83 @@
 // Host function for array addition
 void add_loop(float *dest, int n_elts, const float *a, const float *b)
 {
-  for (int i = 0; i < n_elts; i++) {
-    dest[i] = a[i] + b[i];
-  }
+	for (int i = 0; i < n_elts; i++) {
+		dest[i] = a[i] + b[i];
+	}
 }
 
 // Device kernel for array addition.
 __global__ void add_kernel(float *dest, int n_elts, const float *a,
-                           const float *b)
+	const float *b)
 {
-  int index = blockIdx.x * blockDim.x + threadIdx.x;
-  if (index >= n_elts) return;
+	int index = blockIdx.x * blockDim.x + threadIdx.x;
+	if (index >= n_elts) return;
 
-  dest[index] = a[index] + b[index];
+	dest[index] = a[index] + b[index];
 }
 
 int main()
 {
-  const int ARRAY_LENGTH = 100;
+	const int ARRAY_LENGTH = 100;
 
-  // Generate some data on the host
-  float host_array_a[ARRAY_LENGTH];
-  float host_array_b[ARRAY_LENGTH];
-  float host_array_dest[ARRAY_LENGTH];
+	// Generate some data on the host
+	float host_array_a[ARRAY_LENGTH];
+	float host_array_b[ARRAY_LENGTH];
+	float host_array_dest[ARRAY_LENGTH];
 
-  for (int i = 0; i < ARRAY_LENGTH; i++) {
-    host_array_a[i] = 2 * i;
-    host_array_b[i] = 2 * i + 1;
-  }
+	for (int i = 0; i < ARRAY_LENGTH; i++) {
+		host_array_a[i] = 2 * i;
+		host_array_b[i] = 2 * i + 1;
+	}
 
-  // Allocate device memory
-  float *device_array_a, *device_array_b, *device_array_dest;
-  cudaCheckError(cudaMalloc(&device_array_a, sizeof(host_array_a)));
-  cudaCheckError(cudaMalloc(&device_array_b, sizeof(host_array_b)));
-  cudaCheckError(cudaMalloc(&device_array_dest, sizeof(host_array_dest)));
+	// Allocate device memory
+	float *device_array_a, *device_array_b, *device_array_dest;
+	cudaCheckError(cudaMalloc(&device_array_a, sizeof(host_array_a)));
+	cudaCheckError(cudaMalloc(&device_array_b, sizeof(host_array_b)));
+	cudaCheckError(cudaMalloc(&device_array_dest, sizeof(host_array_dest)));
 
-  // Transfer data to device
-  cudaCheckError(cudaMemcpy(device_array_a, host_array_a, sizeof(host_array_a),
-                            cudaMemcpyHostToDevice));
-  cudaCheckError(cudaMemcpy(device_array_b, host_array_b, sizeof(host_array_b),
-                            cudaMemcpyHostToDevice));
+	// Transfer data to device
+	cudaCheckError(cudaMemcpy(device_array_a, host_array_a, sizeof(host_array_a),
+		cudaMemcpyHostToDevice));
+	cudaCheckError(cudaMemcpy(device_array_b, host_array_b, sizeof(host_array_b),
+		cudaMemcpyHostToDevice));
 
-  // Calculate lauch configuration
-  const int BLOCK_SIZE = 128;
-  int n_blocks = (ARRAY_LENGTH + BLOCK_SIZE - 1) / BLOCK_SIZE;
+	// Calculate lauch configuration
+	const int BLOCK_SIZE = 128;
+	int n_blocks = (ARRAY_LENGTH + BLOCK_SIZE - 1) / BLOCK_SIZE;
 
-  // Add arrays on device
-  add_kernel<<<BLOCK_SIZE, n_blocks>>>(device_array_dest, ARRAY_LENGTH,
-                                       device_array_a, device_array_b);
+	// Add arrays on device
+	add_kernel << <BLOCK_SIZE, n_blocks >> > (device_array_dest, ARRAY_LENGTH,
+		device_array_a, device_array_b);
 
-  // Meanwhile, add arrays on the host, for comparison
-  add_loop(host_array_dest, ARRAY_LENGTH, host_array_a, host_array_b);
+	// Meanwhile, add arrays on the host, for comparison
+	add_loop(host_array_dest, ARRAY_LENGTH, host_array_a, host_array_b);
 
-  // Copy result back to host and compare
-  float host_array_tmp[ARRAY_LENGTH];
-  cudaCheckError(cudaMemcpy(host_array_tmp, device_array_dest,
-                            sizeof(host_array_tmp), cudaMemcpyDeviceToHost));
-  for (int i = 0; i < ARRAY_LENGTH; i++) {
-    assert(host_array_tmp[i] == host_array_dest[i]);
-    printf("%g + %g = %g\n", host_array_a[i], host_array_b[i],
-           host_array_tmp[i]);
-  }
+	// Copy result back to host and compare
+	float host_array_tmp[ARRAY_LENGTH];
+	cudaCheckError(cudaMemcpy(host_array_tmp, device_array_dest,
+		sizeof(host_array_tmp), cudaMemcpyDeviceToHost));
 
-  return 0;
+	printf("host_array_tmp =  ");
+	for (int i = 0; i < ARRAY_LENGTH; i++) {
+		printf("%.0lf, ", host_array_tmp[i]);
+	}
+	printf("\n\n");
+
+	printf("host_array_dest =  ");
+	for (int i = 0; i < ARRAY_LENGTH; i++) {
+		printf("%.0lf, ", host_array_dest[i]);
+	}
+	printf("\n\n");
+
+	for (int i = 0; i < ARRAY_LENGTH; i++) {
+		printf("host_array_tmp[i] = %.0lf\n", host_array_tmp[i]);
+		printf("host_array_dest[i] = %.0lf\n", host_array_dest[i]);
+		printf("\n");
+		assert(host_array_tmp[i] == host_array_dest[i]);
+		printf("%d. %g + %g = %g\n", i + 1, host_array_a[i], host_array_b[i], host_array_tmp[i]);
+	}
+
+
+	return 0;
 }
