@@ -33,7 +33,7 @@ int main()
     const int width1 = 4;
     const int height1 = 3;
 
-    int image_data[height1][width1] = {
+    uchar image_data[height1][width1] = {
        {10, 20, 30, 40},
        {50, 60, 70, 80},
        {90, 100, 110, 120}
