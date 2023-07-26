@@ -4,14 +4,12 @@
 
 #include <iostream>
 
-using namespace cv;
-
 
 int main()
 {
     //going back from this folder: ./build/code_folder/Section3.3_spotlights/
     std::string image_path = "../../../code_folder/opencv_cuda/images/00013.jpg";
-    Mat img = imread(image_path);
+    cv::Mat img = cv::imread(image_path);
 
     if (img.empty())
     {
@@ -19,11 +17,11 @@ int main()
         return 1;
     }
 
-    imshow("Display window", img);
-    int k = waitKey(0); // Wait for a keystroke in the window
+    cv::imshow("Display window", img);
+    int k = cv::waitKey(0); // Wait for a keystroke in the window
     if (k == 's')
     {
-        imwrite("starry_night.png", img);
+        cv::imwrite("starry_night.png", img);
     }
 
 
@@ -32,7 +30,9 @@ int main()
 
 
 //#include <iostream>
-//#include <opencv2/opencv.hpp>
+//#include <opencv2/core.hpp>
+//#include <opencv2/imgcodecs.hpp>
+//#include <opencv2/highgui.hpp>
 //#include <cuda_runtime.h>
 //
 //// CUDA kernel code
