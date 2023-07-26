@@ -1,0 +1,29 @@
+clear;
+close all;
+clc;
+
+image_path = '../images/00013.jpg';
+rgb_img = imread(image_path);
+grayscale_image = rgb2gray(rgb_img);
+grayscale_image(1,1) = 10;
+grayscale_image(1,2) = 20;
+grayscale_image(1,3) = 30;
+grayscale_image(2,1) = 12;
+grayscale_image(3,1) = 13;
+grayscale_image(4,1) = 14;
+
+grayscale_image = [ 10, 20, 30, 40; 
+                    50, 60, 70, 80;
+                    90, 100, 110, 120];
+                
+                
+  
+grayscale_image = imread('../images/grayscale.jpg');
+
+
+img_R = rgb_img(:, :, 1);
+img_G = rgb_img(:, :, 2);
+img_B = rgb_img(:, :, 3);
+
+imshow(grayscale_image);
+imwrite(grayscale_image, '../images/grayscale.jpg');

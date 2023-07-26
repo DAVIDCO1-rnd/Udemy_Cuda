@@ -5,28 +5,70 @@
 #include <iostream>
 
 
+void print_pixels(unsigned char* pixelData, int dimension1, int dimension2)
+{
+    for (int i = 0; i < dimension1; i++)
+    {
+        for (int j = 0; j < dimension2; j++)
+        {
+            size_t current_index = j * dimension1 + i;
+            unsigned char current_val = pixelData[current_index];
+            printf("%d, ", current_val);
+        }
+        printf("\n");
+    }
+}
+
 int main()
 {
     //going back from this folder: ./build/code_folder/Section3.3_spotlights/
-    std::string image_path = "../../../code_folder/opencv_cuda/images/00013.jpg";
-    cv::Mat img = cv::imread(image_path);
+    //std::string image_path = "../../../code_folder/opencv_cuda/images/grayscale.png";
+    //cv::Mat image = cv::imread(image_path);
+    //if (image.empty())
+    //{
+    //    std::cout << "Could not read the image: " << image_path << std::endl;
+    //    return 1;
+    //}
 
-    if (img.empty())
-    {
-        std::cout << "Could not read the image: " << image_path << std::endl;
-        return 1;
+    const int width1 = 4;
+    const int height1 = 3;
+
+    int image_data[height1][width1] = {
+       {10, 20, 30, 40},
+       {50, 60, 70, 80},
+       {90, 100, 110, 120}
+    };
+
+    cv::Mat image(height1, width1, CV_8UC1); // 3 rows, 4 columns, 8-bit single-channel (grayscale)
+
+    for (int y = 0; y < image.rows; ++y) {
+        for (int x = 0; x < image.cols; ++x) {
+            image.at<uchar>(y, x) = static_cast<uchar>(image_data[y][x]);
+        }
     }
 
-    cv::imshow("Display window", img);
-    int k = cv::waitKey(0); // Wait for a keystroke in the window
-    if (k == 's')
-    {
-        cv::imwrite("starry_night.png", img);
-    }
+
+
+
+
+    unsigned char* pixelData = image.data;
+    int height = image.rows;
+    int width = image.cols;
+
+    print_pixels(pixelData, height, width);
+
+    //cv::imshow("Display window", image);
+    //int k = cv::waitKey(0); // Wait for a keystroke in the window
+    //if (k == 's')
+    //{
+    //    cv::imwrite("starry_night.png", image);
+    //}
 
 
     return 0;
 }
+
+
 
 
 //#include <iostream>
