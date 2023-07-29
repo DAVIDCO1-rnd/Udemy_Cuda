@@ -4,6 +4,9 @@
 #include <opencv2/opencv.hpp>
 #include <string>
 
+#include "cuda_runtime.h"
+#include "device_launch_parameters.h"
+
 #include <iostream>
 #include <stdio.h>
 
@@ -31,52 +34,79 @@ void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimensi
     printf("\n\n");
 }
 
-void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, DirectionOfRotation direction_of_rotation)
+__global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height)
 {
+    int input_width = device_input_width[0];
+    int input_height = device_input_height[0];
     int output_width = input_height;
     int output_height = input_width;
 
-    for (int i = 0; i < input_width; i++)
+    int i = threadIdx.x;
+    while (i < input_width)
     {
-        for (int j = 0; j < input_height; j++)
+        int j = blockIdx.x;
+        while (j < input_height)
         {
+            //printf("input_width = %d,   ", input_width);
+            //printf("input_height = %d,   ", input_height);
+
             int current_index_input_data = j * input_width + i;
-            unsigned char current_val = inputData[current_index_input_data];
-
+            unsigned char current_val = device_inputData[current_index_input_data];
             int current_index_output_data;
-            if (direction_of_rotation == DirectionOfRotation::Clockwise)
-            {
-                current_index_output_data = (i + 1) * output_width - j - 1;
-            }
-            else
-            {
-                current_index_output_data = (output_height - i - 1) * output_width + j;
-            }
-            
-            outputData[current_index_output_data] = current_val;
-            if (read_image_from_file == false)
-            {
-                printf("%d, ", current_index_output_data);
-            }            
+            current_index_output_data = (i + 1) * output_width - j - 1;
+            device_outputData[current_index_output_data] = current_val;
+            j += gridDim.x;
         }
-        if (read_image_from_file == false)
-        {
-            printf("\n");
-        }
+        i += blockDim.x;
     }
-
-    if (read_image_from_file == false)
-    {
-        printf("\n\n");
-        printf("build_transposed_image_cpu\n");
-        for (int i = 0; i < input_width * input_height; i++)
-        {
-            unsigned char current_val = outputData[i];
-            printf("%d.  %d\n", i, current_val);
-        }
-        printf("\n\n");
-    }  
 }
+
+//void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, DirectionOfRotation direction_of_rotation)
+//{
+//    int output_width = input_height;
+//    int output_height = input_width;
+//
+//    for (int i = 0; i < input_width; i++)
+//    {
+//        for (int j = 0; j < input_height; j++)
+//        {
+//            int current_index_input_data = j * input_width + i;
+//            unsigned char current_val = inputData[current_index_input_data];
+//
+//            int current_index_output_data;
+//            if (direction_of_rotation == DirectionOfRotation::Clockwise)
+//            {
+//                current_index_output_data = (i + 1) * output_width - j - 1;
+//            }
+//            else
+//            {
+//                current_index_output_data = (output_height - i - 1) * output_width + j;
+//            }
+//            
+//            outputData[current_index_output_data] = current_val;
+//            if (read_image_from_file == false)
+//            {
+//                printf("%d, ", current_index_output_data);
+//            }            
+//        }
+//        if (read_image_from_file == false)
+//        {
+//            printf("\n");
+//        }
+//    }
+//
+//    if (read_image_from_file == false)
+//    {
+//        printf("\n\n");
+//        printf("build_transposed_image_cpu\n");
+//        for (int i = 0; i < input_width * input_height; i++)
+//        {
+//            unsigned char current_val = outputData[i];
+//            printf("%d.  %d\n", i, current_val);
+//        }
+//        printf("\n\n");
+//    }  
+//}
 
 int main()
 {
@@ -131,8 +161,101 @@ int main()
 
 
     DirectionOfRotation direction_of_rotation = DirectionOfRotation::Clockwise;
-    build_image_rotated_by_90_degrees_cpu(image1.data, image2.data, image1.cols, image1.rows, direction_of_rotation);
+    //build_image_rotated_by_90_degrees_cpu(image1.data, image2.data, image1.cols, image1.rows, direction_of_rotation);
 
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //create device_inputData
+    unsigned char* device_inputData = NULL;
+    size_t device_inputData_bytes = sizeof(unsigned char) * image1.rows * image1.cols;
+    cudaError_t cudaStatus_inputData_alloc = cudaMalloc((void**)&device_inputData, device_inputData_bytes);
+    if (cudaStatus_inputData_alloc != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+        return;
+    }
+    // Copy input vectors from host memory to GPU buffers.
+    cudaError_t cudaStatus_g2dim1_memcpy = cudaMemcpy(device_inputData, image1.data, device_inputData_bytes, cudaMemcpyHostToDevice);
+    if (cudaStatus_g2dim1_memcpy != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+        //free_arrays;
+        return;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    unsigned char* device_outputData = NULL;
+    unsigned int device_outputData_num_of_elements = image1.rows * image1.cols;
+    size_t device_outputData_num_of_bytes = device_outputData_num_of_elements * sizeof(unsigned char);
+    cudaError_t cudaStatus_outputData_alloc = cudaMalloc((void**)&device_outputData, device_outputData_num_of_bytes);
+    if (cudaStatus_outputData_alloc != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+        //free_arrays;
+        return;
+    }
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //create device_input_width
+    int* device_input_width = NULL;
+    size_t device_input_width_bytes = sizeof(int);
+    cudaError_t cudaStatus_input_width_alloc = cudaMalloc((void**)&device_input_width, device_input_width_bytes);
+    if (cudaStatus_input_width_alloc != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+        return;
+    }
+    cudaError_t cudaStatus_input_width_memcpy = cudaMemcpy(device_input_width, &(image1.cols), device_input_width_bytes, cudaMemcpyHostToDevice);
+    if (cudaStatus_input_width_memcpy != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+        //free_arrays;
+        return;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //create device_input_height
+    int* device_input_height = NULL;
+    size_t device_input_height_bytes = sizeof(int);
+    cudaError_t cudaStatus_input_height_alloc = cudaMalloc((void**)&device_input_height, device_input_height_bytes);
+    if (cudaStatus_input_height_alloc != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+        return;
+    }
+    cudaError_t cudaStatus_input_height_memcpy = cudaMemcpy(device_input_height, &(image1.rows), device_input_height_bytes, cudaMemcpyHostToDevice);
+    if (cudaStatus_input_height_memcpy != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+        //free_arrays;
+        return;
+    }
+
+    int threadsPerBlock = 256;
+    int blocksPerGrid = 256;
+
+    build_image_rotated_by_90_degrees_cuda << < blocksPerGrid, threadsPerBlock >> > (device_inputData, device_outputData, device_input_width, device_input_height);
+
+    // Check for any errors launching the kernel
+    cudaError_t cudaStatusLastError = cudaGetLastError();
+    if (cudaStatusLastError != cudaSuccess) {
+        fprintf(stderr, "build_image_rotated_by_90_degrees_cuda launch failed: %s\n", cudaGetErrorString(cudaStatusLastError));
+        //free_arrays
+        return;
+    }
+
+    // cudaDeviceSynchronize waits for the kernel to finish, and returns
+    // any errors encountered during the launch.
+    cudaError_t cudaStatusDeviceSynchronize = cudaDeviceSynchronize();
+    if (cudaStatusDeviceSynchronize != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceSynchronize returned error code %d after launching build_image_rotated_by_90_degrees_cuda!\n", cudaStatusDeviceSynchronize);
+        //free_arrays
+        return;
+    }
+
+    // Copy output vector from GPU buffer to host memory.
+    unsigned char* outputData = (unsigned char*)malloc(device_outputData_num_of_bytes);
+    cudaError_t cudaStatus_outputData_memcpy = cudaMemcpy(outputData, device_outputData, device_outputData_num_of_bytes, cudaMemcpyDeviceToHost);
+    if (cudaStatus_outputData_memcpy != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy outputData failed!");
+        //free_arrays
+        return;
+    }
+    image2.data = outputData;
 
 
     if (read_image_from_file == true)
