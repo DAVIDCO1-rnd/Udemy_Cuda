@@ -47,13 +47,11 @@ __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inp
         int j = blockIdx.x;
         while (j < input_height)
         {
-            //printf("input_width = %d,   ", input_width);
-            //printf("input_height = %d,   ", input_height);
-
             int current_index_input_data = j * input_width + i;
             unsigned char current_val = device_inputData[current_index_input_data];
             int current_index_output_data;
-            current_index_output_data = (i + 1) * output_width - j - 1;
+            current_index_output_data = (i + 1) * output_width - j - 1; //clockwise
+            //current_index_output_data = (output_height - i - 1) * output_width + j; //counterclockwise
             device_outputData[current_index_output_data] = current_val;
             j += gridDim.x;
         }
