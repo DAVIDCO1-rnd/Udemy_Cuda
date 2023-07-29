@@ -1,9 +1,18 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp>
+#include <opencv2/opencv.hpp>
 #include <string>
 
 #include <iostream>
+#include <stdio.h>
+
+bool read_image_from_file = false;
+
+enum DirectionOfRotation {
+    Clockwise,
+    CounterClockwise
+};
 
 
 void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimension1, int dimension2)
@@ -13,7 +22,7 @@ void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimensi
     {
         for (int j = 0; j < dimension2; j++)
         {
-            size_t current_index = j * dimension1 + i;
+            int current_index = i * dimension2 + j;
             unsigned char current_val = pixelData[current_index];
             printf("%d, ", current_val);
         }
@@ -22,59 +31,123 @@ void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimensi
     printf("\n\n");
 }
 
-int main()
+void build_transposed_image_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, DirectionOfRotation direction_of_rotation)
 {
-    //going back from this folder: ./build/code_folder/Section3.3_spotlights/
-    std::string image_path = "../../../code_folder/opencv_cuda/images/grayscale.png";
-    //cv::Mat image = cv::imread(image_path);
-    //if (image.empty())
-    //{
-    //    std::cout << "Could not read the image: " << image_path << std::endl;
-    //    return 1;
-    //}
+    int output_width = input_height;
+    int output_height = input_width;
 
-    const int width3 = 4;
-    const int height3 = 3;
+    for (int i = 0; i < input_width; i++)
+    {
+        for (int j = 0; j < input_height; j++)
+        {
+            int current_index_input_data = j * input_width + i;
+            unsigned char current_val = inputData[current_index_input_data];
 
-    uchar image_data[height3][width3] = {
-       {10, 20, 30, 40},
-       {50, 60, 70, 80},
-       {90, 100, 110, 120}
-    };
-
-    cv::Mat image1(height3, width3, CV_8UC1); // 3 rows, 4 columns, 8-bit single-channel (grayscale)
-    for (int y = 0; y < image1.rows; ++y) {
-        for (int x = 0; x < image1.cols; ++x) {
-            image1.at<uchar>(y, x) = static_cast<uchar>(image_data[y][x]);
+            int current_index_output_data;
+            if (direction_of_rotation == Clockwise)
+            {
+                current_index_output_data = (i + 1) * output_width - j - 1;
+            }
+            else
+            {
+                current_index_output_data = (i + 1) * output_width - j - 1;
+            }
+            
+            outputData[current_index_output_data] = current_val;
+            if (read_image_from_file == false)
+            {
+                printf("%d, ", current_index_output_data);
+            }            
+        }
+        if (read_image_from_file == false)
+        {
+            printf("\n");
         }
     }
 
-    cv::imwrite(image_path, image1);
-    cv::Mat image2 = cv::imread(image_path);
+    if (read_image_from_file == false)
+    {
+        printf("\n\n");
+        printf("build_transposed_image_cpu\n");
+        for (int i = 0; i < input_width * input_height; i++)
+        {
+            unsigned char current_val = outputData[i];
+            printf("%d.  %d\n", i, current_val);
+        }
+        printf("\n\n");
+    }  
+}
+
+int main()
+{
+    //going back from this folder: ./build/code_folder/Section3.3_spotlights/
+    std::string image_path = "../../../code_folder/opencv_cuda/images/balloons.jpg";
+    cv::Mat image1;
+    if (read_image_from_file == true)
+    {
+        cv::Mat rgb_image1 = cv::imread(image_path);        
+        cv::cvtColor(rgb_image1, image1, cv::COLOR_BGR2GRAY);
+        if (image1.empty())
+        {
+            std::cout << "Could not read the image: " << image_path << std::endl;
+            return 1;
+        }
+    }
+
+
+    if (read_image_from_file == false)
+    {
+        const int width3 = 4;
+        const int height3 = 3;
+
+        uchar image_data[height3][width3] = {
+           {10, 20, 30, 40},
+           {50, 60, 70, 80},
+           {90, 100, 110, 120}
+        };
+        image1 = cv::Mat(height3, width3, CV_8UC1);
+        for (int y = 0; y < image1.rows; ++y) {
+            for (int x = 0; x < image1.cols; ++x) {
+                image1.at<uchar>(y, x) = static_cast<uchar>(image_data[y][x]);
+            }
+        }
+
+        printf("image1:\n");
+        for (int i = 0; i < image1.rows * image1.cols; i++)
+        {
+            printf("%d.  %d\n", i, image1.data[i]);
+        }
+        printf("\n\n");
+    }
 
 
 
-
-
+    cv::Mat image2(image1.cols, image1.rows, CV_8UC1);
 
 
     unsigned char* pixelData1 = image1.data;
     int height1 = image1.rows;
     int width1 = image1.cols;
 
-    unsigned char* pixelData2 = image1.data;
-    int height2 = image2.rows;
-    int width2 = image2.cols;
 
-    print_pixels("pixelData1", pixelData1, height1, width1);
-    print_pixels("pixelData2", pixelData2, height2, width2);
+    DirectionOfRotation direction_of_rotation = CounterClockwise;
+    build_transposed_image_cpu(image1.data, image2.data, image1.cols, image1.rows, direction_of_rotation);
 
-    //cv::imshow("Display window", image);
-    //int k = cv::waitKey(0); // Wait for a keystroke in the window
-    //if (k == 's')
-    //{
-    //    cv::imwrite("starry_night.png", image);
-    //}
+
+
+    if (read_image_from_file == true)
+    {
+        cv::imshow("image1", image1);
+        cv::imshow("image2", image2);
+    }
+    else
+    {
+        print_pixels("image1", image1.data, image1.rows, image1.cols);
+        print_pixels("image2", image2.data, image2.rows, image2.cols);
+    }
+
+    int k = cv::waitKey(0); // Wait for a keystroke in the window
+
 
 
     return 0;
