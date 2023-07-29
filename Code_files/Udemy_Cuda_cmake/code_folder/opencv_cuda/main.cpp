@@ -9,7 +9,7 @@
 
 bool read_image_from_file = false;
 
-enum DirectionOfRotation {
+enum class DirectionOfRotation {
     Clockwise,
     CounterClockwise
 };
@@ -31,7 +31,7 @@ void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimensi
     printf("\n\n");
 }
 
-void build_transposed_image_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, DirectionOfRotation direction_of_rotation)
+void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, DirectionOfRotation direction_of_rotation)
 {
     int output_width = input_height;
     int output_height = input_width;
@@ -44,7 +44,7 @@ void build_transposed_image_cpu(unsigned char* inputData, unsigned char* outputD
             unsigned char current_val = inputData[current_index_input_data];
 
             int current_index_output_data;
-            if (direction_of_rotation == Clockwise)
+            if (direction_of_rotation == DirectionOfRotation::Clockwise)
             {
                 current_index_output_data = (i + 1) * output_width - j - 1;
             }
@@ -130,8 +130,8 @@ int main()
     int width1 = image1.cols;
 
 
-    DirectionOfRotation direction_of_rotation = Clockwise;
-    build_transposed_image_cpu(image1.data, image2.data, image1.cols, image1.rows, direction_of_rotation);
+    DirectionOfRotation direction_of_rotation = DirectionOfRotation::Clockwise;
+    build_image_rotated_by_90_degrees_cpu(image1.data, image2.data, image1.cols, image1.rows, direction_of_rotation);
 
 
 
