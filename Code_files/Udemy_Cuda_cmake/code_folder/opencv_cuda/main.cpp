@@ -50,7 +50,7 @@ void build_transposed_image_cpu(unsigned char* inputData, unsigned char* outputD
             }
             else
             {
-                current_index_output_data = (i + 1) * output_width - j - 1;
+                current_index_output_data = (output_height - i - 1) * output_width + j;
             }
             
             outputData[current_index_output_data] = current_val;
@@ -97,13 +97,13 @@ int main()
 
     if (read_image_from_file == false)
     {
-        const int width3 = 4;
+        const int width3 = 6;
         const int height3 = 3;
 
         uchar image_data[height3][width3] = {
-           {10, 20, 30, 40},
-           {50, 60, 70, 80},
-           {90, 100, 110, 120}
+           {10, 20, 30, 40, 50, 60},
+           {70, 80, 90, 100, 110, 120},
+           {130, 140, 150, 160, 170, 180}
         };
         image1 = cv::Mat(height3, width3, CV_8UC1);
         for (int y = 0; y < image1.rows; ++y) {
@@ -130,7 +130,7 @@ int main()
     int width1 = image1.cols;
 
 
-    DirectionOfRotation direction_of_rotation = CounterClockwise;
+    DirectionOfRotation direction_of_rotation = Clockwise;
     build_transposed_image_cpu(image1.data, image2.data, image1.cols, image1.rows, direction_of_rotation);
 
 
