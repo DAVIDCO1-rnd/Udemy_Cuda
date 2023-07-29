@@ -7,7 +7,7 @@
 #include <iostream>
 #include <stdio.h>
 
-bool read_image_from_file = false;
+bool read_image_from_file = true;
 
 enum class DirectionOfRotation {
     Clockwise,
