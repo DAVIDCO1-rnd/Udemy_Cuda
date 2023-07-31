@@ -93,7 +93,7 @@ void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned ch
         for (int j = 0; j < input_height; j++)
         {
             int current_index_input_data = j * input_width + i;
-            unsigned short current_val = inputData[current_index_input_data];
+            unsigned char current_val = inputData[current_index_input_data];
 
             int current_index_output_data;
             if (direction_of_rotation == DirectionOfRotation::Clockwise)
