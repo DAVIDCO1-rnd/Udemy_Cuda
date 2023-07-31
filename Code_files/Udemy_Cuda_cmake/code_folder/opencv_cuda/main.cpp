@@ -83,17 +83,29 @@ __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inp
 }
 #endif //USE_CUDA
 
-void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, int pixel_size, DirectionOfRotation direction_of_rotation)
+void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, PixelType pixel_type, DirectionOfRotation direction_of_rotation)
 {
     int output_width = input_height;
     int output_height = input_width;
+    int pixel_size = (int)pixel_type;
 
-    for (int i = 0; i < input_width * pixel_size; i++)
+    for (int i = 0; i < input_width * pixel_size; i+= pixel_size)
     {
         for (int j = 0; j < input_height; j++)
         {
-            int current_index_input_data = j * input_width + i;
-            unsigned char current_val = inputData[current_index_input_data];
+            int current_index_input_data = j * input_width * pixel_size + i;
+            unsigned char current_val1;
+            unsigned char current_val2;
+            if (pixel_type == PixelType::UCHAR)
+            {
+                current_val1 = inputData[current_index_input_data];
+            }
+            else if (pixel_type == PixelType::USHORT)
+            {
+                current_val1 = inputData[current_index_input_data];
+                current_val2 = inputData[current_index_input_data + 1];
+            }
+            
 
             int current_index_output_data;
             if (direction_of_rotation == DirectionOfRotation::Clockwise)
@@ -105,7 +117,7 @@ void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned ch
                 current_index_output_data = (output_height - i - 1) * output_width + j;
             }
             
-            outputData[current_index_output_data] = current_val;
+            outputData[current_index_output_data] = current_val1;
             if (read_image_from_file == false)
             {
                 printf("%d, ", current_index_output_data);
@@ -213,9 +225,9 @@ int main()
 
     DirectionOfRotation direction_of_rotation = DirectionOfRotation::Clockwise;
 #ifndef USE_CUDA
-    build_image_rotated_by_90_degrees_cpu(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, pixel_size, direction_of_rotation);
+    build_image_rotated_by_90_degrees_cpu(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, PixelType::UCHAR, direction_of_rotation);
 
-    build_image_rotated_by_90_degrees_cpu(image1_ushort.data, image2_ushort.data, image1_ushort.cols, image1_ushort.rows, pixel_size, direction_of_rotation);
+    build_image_rotated_by_90_degrees_cpu(image1_ushort.data, image2_ushort.data, image1_ushort.cols, image1_ushort.rows, PixelType::USHORT, direction_of_rotation);
 #endif
 
 #ifdef USE_CUDA
