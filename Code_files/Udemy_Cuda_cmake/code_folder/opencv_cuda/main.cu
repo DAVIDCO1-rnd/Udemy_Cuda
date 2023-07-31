@@ -10,6 +10,8 @@
 #include <iostream>
 #include <stdio.h>
 
+#define USE_CUDA
+
 bool read_image_from_file = true;
 
 enum class DirectionOfRotation {
@@ -59,52 +61,52 @@ __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inp
     }
 }
 
-//void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, DirectionOfRotation direction_of_rotation)
-//{
-//    int output_width = input_height;
-//    int output_height = input_width;
-//
-//    for (int i = 0; i < input_width; i++)
-//    {
-//        for (int j = 0; j < input_height; j++)
-//        {
-//            int current_index_input_data = j * input_width + i;
-//            unsigned char current_val = inputData[current_index_input_data];
-//
-//            int current_index_output_data;
-//            if (direction_of_rotation == DirectionOfRotation::Clockwise)
-//            {
-//                current_index_output_data = (i + 1) * output_width - j - 1;
-//            }
-//            else
-//            {
-//                current_index_output_data = (output_height - i - 1) * output_width + j;
-//            }
-//            
-//            outputData[current_index_output_data] = current_val;
-//            if (read_image_from_file == false)
-//            {
-//                printf("%d, ", current_index_output_data);
-//            }            
-//        }
-//        if (read_image_from_file == false)
-//        {
-//            printf("\n");
-//        }
-//    }
-//
-//    if (read_image_from_file == false)
-//    {
-//        printf("\n\n");
-//        printf("build_transposed_image_cpu\n");
-//        for (int i = 0; i < input_width * input_height; i++)
-//        {
-//            unsigned char current_val = outputData[i];
-//            printf("%d.  %d\n", i, current_val);
-//        }
-//        printf("\n\n");
-//    }  
-//}
+void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, DirectionOfRotation direction_of_rotation)
+{
+    int output_width = input_height;
+    int output_height = input_width;
+
+    for (int i = 0; i < input_width; i++)
+    {
+        for (int j = 0; j < input_height; j++)
+        {
+            int current_index_input_data = j * input_width + i;
+            unsigned char current_val = inputData[current_index_input_data];
+
+            int current_index_output_data;
+            if (direction_of_rotation == DirectionOfRotation::Clockwise)
+            {
+                current_index_output_data = (i + 1) * output_width - j - 1;
+            }
+            else
+            {
+                current_index_output_data = (output_height - i - 1) * output_width + j;
+            }
+            
+            outputData[current_index_output_data] = current_val;
+            if (read_image_from_file == false)
+            {
+                printf("%d, ", current_index_output_data);
+            }            
+        }
+        if (read_image_from_file == false)
+        {
+            printf("\n");
+        }
+    }
+
+    if (read_image_from_file == false)
+    {
+        printf("\n\n");
+        printf("build_transposed_image_cpu\n");
+        for (int i = 0; i < input_width * input_height; i++)
+        {
+            unsigned char current_val = outputData[i];
+            printf("%d.  %d\n", i, current_val);
+        }
+        printf("\n\n");
+    }  
+}
 
 int main()
 {
@@ -153,14 +155,17 @@ int main()
     cv::Mat image2(image1.cols, image1.rows, CV_8UC1);
 
 
-    unsigned char* pixelData1 = image1.data;
-    int height1 = image1.rows;
-    int width1 = image1.cols;
+    //unsigned char* pixelData1 = image1.data;
+    //int height1 = image1.rows;
+    //int width1 = image1.cols;
 
 
     DirectionOfRotation direction_of_rotation = DirectionOfRotation::Clockwise;
-    //build_image_rotated_by_90_degrees_cpu(image1.data, image2.data, image1.cols, image1.rows, direction_of_rotation);
+#ifndef USE_CUDA
+    build_image_rotated_by_90_degrees_cpu(image1.data, image2.data, image1.cols, image1.rows, direction_of_rotation);
+#endif
 
+#ifdef USE_CUDA
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     //create device_inputData
@@ -254,6 +259,7 @@ int main()
         return;
     }
     image2.data = outputData;
+#endif //USE_CUDA
 
 
     if (read_image_from_file == true)
