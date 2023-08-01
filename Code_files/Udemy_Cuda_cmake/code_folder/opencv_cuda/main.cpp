@@ -13,13 +13,13 @@
 #include "device_launch_parameters.h"
 #endif //USE_CUDA
 
-bool read_image_from_file = false;
+bool read_image_from_file = true;
 const int height = 3;
 const int width = 5;
 
 enum class DirectionOfRotation {
-    Clockwise,
-    CounterClockwise
+    Clockwise = 0,
+    CounterClockwise = 1
 };
 
 enum class PixelType {
@@ -33,23 +33,23 @@ void print_single_val(unsigned char* pixelData, int i, PixelType pixel_type)
     if (pixel_type == PixelType::UCHAR)
     {
         unsigned char current_val = pixelData[i];
-        printf("0x%04x, ", current_val);
+        printf("0x%02x, ", current_val);
     }
     if (pixel_type == PixelType::USHORT)
     {
-        unsigned char sub_pixel1 = pixelData[i];
+        unsigned char sub_pixel1 = pixelData[i + 0];
         unsigned char sub_pixel2 = pixelData[i + 1];
         unsigned short current_val = 0x100 * sub_pixel2 + sub_pixel1;
         printf("0x%04x, ", current_val);
     }
     if (pixel_type == PixelType::FLOAT)
     {
-        unsigned char sub_pixel1 = pixelData[i];
+        unsigned char sub_pixel1 = pixelData[i + 0];
         unsigned char sub_pixel2 = pixelData[i + 1];
         unsigned char sub_pixel3 = pixelData[i + 2];
         unsigned char sub_pixel4 = pixelData[i + 3];
-        unsigned short current_val = 0x1000000 * sub_pixel4 + 0x10000 * sub_pixel3 + 0x100 * sub_pixel2 + sub_pixel1;
-        printf("0x%04x, ", current_val);
+        float current_val = 4.0 * sub_pixel4 + 3.0 * sub_pixel3 + 2.0 * sub_pixel2 + 1.0 * sub_pixel1;
+        printf("0x%08x, ", current_val);
     }
 }
 
@@ -114,11 +114,11 @@ __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inp
 }
 #endif //USE_CUDA
 
-void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, PixelType pixel_type, DirectionOfRotation direction_of_rotation)
+template <typename T>
+void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, int pixel_size, int direction_of_rotation)
 {
     int output_width = input_height;
     int output_height = input_width;
-    int pixel_size = (int)pixel_type;
 
     for (int i = 0; i < input_width * pixel_size; i += pixel_size)
     {
@@ -127,45 +127,15 @@ void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned ch
             int current_index_input_data = i * input_height + j * pixel_size;
             int current_index_output_data;
 
-            if (pixel_type == PixelType::UCHAR)
+            if (direction_of_rotation == 0) //Clockwise
             {
-                if (direction_of_rotation == DirectionOfRotation::Clockwise)
-                {
-                    current_index_output_data = (input_height - j - 1) * input_width + i;
-                }
-                else
-                {
-                    current_index_output_data = j * input_width + input_width - 1 - i;
-                }
+                current_index_output_data = pixel_size * (input_height - j - 1) * input_width + i;
             }
-            else if (pixel_type == PixelType::USHORT)
+            else //CounterClockwise
             {
-                if (direction_of_rotation == DirectionOfRotation::Clockwise)
-                {
-                    current_index_output_data = pixel_size * (input_height - j - 1) * input_width + i;
-                }
-                else
-                {
-                    current_index_output_data = pixel_size * (j * input_width + input_width - 1) - i;
-                }
+                current_index_output_data = pixel_size * (j * input_width + input_width - 1) - i;
             }
-
-
-            unsigned char current_val1;
-            unsigned char current_val2;
-            if (pixel_type == PixelType::UCHAR)
-            {
-                current_val1 = inputData[current_index_output_data];
-                outputData[current_index_input_data] = current_val1;
-            }
-            else if (pixel_type == PixelType::USHORT)
-            {
-                current_val1 = inputData[current_index_output_data];
-                current_val2 = inputData[current_index_output_data + 1];
-                outputData[current_index_input_data] = current_val1;
-                outputData[current_index_input_data + 1] = current_val2;
-            }
-            
+            *((T*)(outputData + current_index_input_data)) = *(T*)(inputData + current_index_output_data);
             
             if (read_image_from_file == false)
             {
@@ -236,6 +206,7 @@ int main()
     std::string image_path = "../../../code_folder/opencv_cuda/images/balloons.jpg";
     cv::Mat image1_uchar;
     cv::Mat image1_ushort;
+    cv::Mat image1_float;
     if (read_image_from_file == true)
     {
         cv::Mat rgb_image1 = cv::imread(image_path);        
@@ -245,6 +216,8 @@ int main()
             std::cout << "Could not read the image: " << image_path << std::endl;
             return 1;
         }
+        image1_uchar.convertTo(image1_ushort, CV_16UC1, 256);
+        image1_uchar.convertTo(image1_float, CV_32FC1, 65536);
     }
 
 
@@ -266,23 +239,26 @@ int main()
 
         image1_ushort = build_image_from_data(image_data, PixelType::USHORT);
         print_pixels("built-in image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
+
+        image1_float = build_image_from_data(image_data, PixelType::FLOAT);
+        print_pixels("built-in image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
     }
 
 
 
     cv::Mat image2_uchar(image1_uchar.cols, image1_uchar.rows, CV_8UC1);
     cv::Mat image2_ushort(image1_ushort.cols, image1_ushort.rows, CV_16UC1);
+    cv::Mat image2_float(image1_ushort.cols, image1_ushort.rows, CV_32FC1);
 
 
 
-    int pixel_size = 1;
-
-
-    DirectionOfRotation direction_of_rotation = DirectionOfRotation::CounterClockwise;
+    DirectionOfRotation direction_of_rotation = DirectionOfRotation::Clockwise;
 #ifndef USE_CUDA
-    build_image_rotated_by_90_degrees_cpu(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, PixelType::UCHAR, direction_of_rotation);
+    build_image_rotated_by_90_degrees_cpu<unsigned char>(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, (int)PixelType::UCHAR, (int)direction_of_rotation);
 
-    build_image_rotated_by_90_degrees_cpu(image1_ushort.data, image2_ushort.data, image1_ushort.cols, image1_ushort.rows, PixelType::USHORT, direction_of_rotation);
+    build_image_rotated_by_90_degrees_cpu<unsigned short>(image1_ushort.data, image2_ushort.data, image1_ushort.cols, image1_ushort.rows, (int)PixelType::USHORT, (int)direction_of_rotation);
+
+    build_image_rotated_by_90_degrees_cpu<float>(image1_float.data, image2_float.data, image1_float.cols, image1_float.rows, (int)PixelType::FLOAT, (int)direction_of_rotation);
 #endif
 
 #ifdef USE_CUDA
@@ -387,8 +363,11 @@ int main()
         cv::imshow("image1_uchar", image1_uchar);
         cv::imshow("image2_uchar", image2_uchar);
 
-        //cv::imshow("image1_ushort", image1_ushort);
-        //cv::imshow("image2_ushort", image2_ushort);
+        cv::imshow("image1_ushort", image1_ushort);
+        cv::imshow("image2_ushort", image2_ushort);
+
+        cv::imshow("image1_float", image1_float);
+        cv::imshow("image2_float", image2_float);
     }
     else
     {
@@ -397,6 +376,9 @@ int main()
 
         print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
         print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT);
+
+        print_pixels("image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
+        print_pixels("image2_float", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::FLOAT);
     }
 
     int k = cv::waitKey(0); // Wait for a keystroke in the window
