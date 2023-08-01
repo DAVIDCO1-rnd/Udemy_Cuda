@@ -13,7 +13,7 @@
 #include "device_launch_parameters.h"
 #endif //USE_CUDA
 
-bool read_image_from_file = true;
+bool read_image_from_file = false;
 const int height = 3;
 const int width = 5;
 
@@ -120,34 +120,53 @@ void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned ch
     int output_height = input_width;
     int pixel_size = (int)pixel_type;
 
-    for (int i = 0; i < input_width * pixel_size; i+= pixel_size)
+    for (int i = 0; i < input_width * pixel_size; i += pixel_size)
     {
         for (int j = 0; j < input_height; j++)
         {
-            int current_index_input_data = i * input_height * pixel_size + j;       
+            int current_index_input_data = i * input_height + j * pixel_size;
             int current_index_output_data;
-            if (direction_of_rotation == DirectionOfRotation::Clockwise)
+
+            if (pixel_type == PixelType::UCHAR)
             {
-                current_index_output_data = (input_height - j - 1) * input_width + i;
+                if (direction_of_rotation == DirectionOfRotation::Clockwise)
+                {
+                    current_index_output_data = (input_height - j - 1) * input_width + i;
+                }
+                else
+                {
+                    current_index_output_data = j * input_width + input_width - 1 - i;
+                }
             }
-            else
+            else if (pixel_type == PixelType::USHORT)
             {
-                current_index_output_data = j * input_width + input_width - i - 1;
+                if (direction_of_rotation == DirectionOfRotation::Clockwise)
+                {
+                    current_index_output_data = pixel_size * (input_height - j - 1) * input_width + i;
+                }
+                else
+                {
+                    current_index_output_data = pixel_size * (j * input_width + input_width - 1) - i;
+                }
             }
+
 
             unsigned char current_val1;
             unsigned char current_val2;
             if (pixel_type == PixelType::UCHAR)
             {
                 current_val1 = inputData[current_index_output_data];
+                outputData[current_index_input_data] = current_val1;
             }
             else if (pixel_type == PixelType::USHORT)
             {
                 current_val1 = inputData[current_index_output_data];
                 current_val2 = inputData[current_index_output_data + 1];
+                outputData[current_index_input_data] = current_val1;
+                outputData[current_index_input_data + 1] = current_val2;
             }
             
-            outputData[current_index_input_data] = current_val1;
+            
             if (read_image_from_file == false)
             {
                 printf("%d, ", current_index_output_data);
