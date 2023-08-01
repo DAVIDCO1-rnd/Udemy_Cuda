@@ -6,7 +6,7 @@
 #include <iostream>
 #include <stdio.h>
 
-#define USE_CUDA
+//#define USE_CUDA
 
 #ifdef USE_CUDA
 #include "cuda_runtime.h"
@@ -105,7 +105,8 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
             int current_index_input_data = pixel_size * (i * input_height + j);
             int current_index_output_data = pixel_size * ((input_height - j - 1) * input_width + i); //Clockwise
             //int current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i); //CounterClockwise
-            *((T*)(device_outputData + current_index_input_data)) = *(T*)(device_inputData + current_index_output_data);
+            T pixel_value = *(T*)(device_inputData + current_index_output_data);
+            *((T*)(device_outputData + current_index_input_data)) = pixel_value;
             j += gridDim.x;
         }
         i += blockDim.x;
@@ -113,7 +114,7 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
 }
 #endif //USE_CUDA
 
-template <typename T>
+template <class T>
 void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, int pixel_size, int direction_of_rotation)
 {
     int output_width = input_height;
@@ -134,7 +135,8 @@ void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned ch
             {
                 current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i);
             }
-            *((T*)(outputData + current_index_input_data)) = *(T*)(inputData + current_index_output_data);
+            T pixel_value = *(T*)(inputData + current_index_output_data);
+            *((T*)(outputData + current_index_input_data)) = pixel_value;
             
             if (read_image_from_file == false)
             {
