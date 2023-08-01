@@ -88,7 +88,7 @@ void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimensi
 }
 
 #ifdef USE_CUDA
-__global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height)
+__global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height, int device_pixel_size)
 {
     int input_width = device_input_width[0];
     int input_height = device_input_height[0];
@@ -96,7 +96,7 @@ __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inp
     int output_height = input_width;
 
     int i = threadIdx.x;
-    while (i < input_width)
+    while (i < input_width * device_pixel_size)
     {
         int j = blockIdx.x;
         while (j < input_height)
@@ -120,20 +120,20 @@ void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned ch
     int output_width = input_height;
     int output_height = input_width;
 
-    for (int i = 0; i < input_width * pixel_size; i += pixel_size)
+    for (int i = 0; i < input_width; i++)
     {
         for (int j = 0; j < input_height; j++)
         {
-            int current_index_input_data = i * input_height + j * pixel_size;
+            int current_index_input_data = pixel_size * (i * input_height + j);
             int current_index_output_data;
 
             if (direction_of_rotation == 0) //Clockwise
             {
-                current_index_output_data = pixel_size * (input_height - j - 1) * input_width + i;
+                current_index_output_data = pixel_size * ((input_height - j - 1) * input_width + i);
             }
             else //CounterClockwise
             {
-                current_index_output_data = pixel_size * (j * input_width + input_width - 1) - i;
+                current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i);
             }
             *((T*)(outputData + current_index_input_data)) = *(T*)(inputData + current_index_output_data);
             
