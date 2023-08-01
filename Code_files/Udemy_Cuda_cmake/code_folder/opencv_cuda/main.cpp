@@ -49,7 +49,7 @@ void print_single_val(unsigned char* pixelData, int i, PixelType pixel_type)
         unsigned char sub_pixel3 = pixelData[i + 2];
         unsigned char sub_pixel4 = pixelData[i + 3];
         float current_val = 4.0 * sub_pixel4 + 3.0 * sub_pixel3 + 2.0 * sub_pixel2 + 1.0 * sub_pixel1;
-        printf("0x%08x, ", current_val);
+        printf("%f, ", current_val);
     }
 }
 
@@ -187,14 +187,17 @@ cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
             }
             break;
 
-        //case PixelType::FLOAT:
-        //    image = cv::Mat(height3, width3, CV_32F);
-        //    for (int y = 0; y < image.rows; ++y) {
-        //        for (int x = 0; x < image.cols; ++x) {
-        //            image.at<ushort>(y, x) = static_cast<u>(0xFFFFFF * image_data[y][x]);
-        //        }
-        //    }
-        //    break;
+        case PixelType::FLOAT:
+            image = cv::Mat(height, width, CV_32FC1);
+            for (int y = 0; y < image.rows; ++y) {
+                for (int x = 0; x < image.cols; ++x) {
+                    uchar current_val = image_data[y][x];
+                    float current_val_float = (float)current_val;
+                    float new_val = 1.0 * current_val_float;
+                    image.at<float>(y, x) = new_val;
+                }
+            }
+            break;
 
     }
     return image;
@@ -241,7 +244,7 @@ int main()
         print_pixels("built-in image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
 
         image1_float = build_image_from_data(image_data, PixelType::FLOAT);
-        print_pixels("built-in image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
+        print_pixels("built-in image1_float", image1_float.data, image1_float.rows, image1_float.cols, PixelType::FLOAT);
     }
 
 
