@@ -428,7 +428,7 @@ int main()
         //free_arrays
         return;
     }
-    image2_ushort.data = outputData1;
+    image2_ushort.data = outputData2;
 #endif //USE_CUDA
 
 
