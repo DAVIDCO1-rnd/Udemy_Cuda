@@ -13,7 +13,7 @@
 #include "device_launch_parameters.h"
 #endif //USE_CUDA
 
-bool read_image_from_file = false;
+bool read_image_from_file = true;
 const int height = 3;
 const int width = 5;
 
@@ -124,31 +124,30 @@ void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned ch
     {
         for (int j = 0; j < input_height; j++)
         {
-            int current_index_input_data = j * input_width * pixel_size + i;
+            int current_index_input_data = i * input_height * pixel_size + j;       
+            int current_index_output_data;
+            if (direction_of_rotation == DirectionOfRotation::Clockwise)
+            {
+                current_index_output_data = (input_height - j - 1) * input_width + i;
+            }
+            else
+            {
+                current_index_output_data = j * input_width + input_width - i - 1;
+            }
+
             unsigned char current_val1;
             unsigned char current_val2;
             if (pixel_type == PixelType::UCHAR)
             {
-                current_val1 = inputData[current_index_input_data];
+                current_val1 = inputData[current_index_output_data];
             }
             else if (pixel_type == PixelType::USHORT)
             {
-                current_val1 = inputData[current_index_input_data];
-                current_val2 = inputData[current_index_input_data + 1];
+                current_val1 = inputData[current_index_output_data];
+                current_val2 = inputData[current_index_output_data + 1];
             }
             
-
-            int current_index_output_data;
-            if (direction_of_rotation == DirectionOfRotation::Clockwise)
-            {
-                current_index_output_data = (i + 1) * output_width - j - 1;
-            }
-            else
-            {
-                current_index_output_data = (output_height - i - 1) * output_width + j;
-            }
-            
-            outputData[current_index_output_data] = current_val1;
+            outputData[current_index_input_data] = current_val1;
             if (read_image_from_file == false)
             {
                 printf("%d, ", current_index_output_data);
@@ -239,9 +238,9 @@ int main()
         //};
 
         uchar image_data[height][width] = {
-           {0x05, 0x10, 0x15, 0x20, 0x25},
-           {0x30, 0x35, 0x40, 0x45, 0x50},
-           {0x55, 0x60, 0x65, 0x70, 0x75}
+           {0x00, 0x01, 0x02, 0x03, 0x04},
+           {0x05, 0x06, 0x07, 0x08, 0x09},
+           {0x10, 0x11, 0x12, 0x13, 0x14}
         };
         image1_uchar = build_image_from_data(image_data, PixelType::UCHAR);        
         print_pixels("built-in image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
@@ -260,7 +259,7 @@ int main()
     int pixel_size = 1;
 
 
-    DirectionOfRotation direction_of_rotation = DirectionOfRotation::Clockwise;
+    DirectionOfRotation direction_of_rotation = DirectionOfRotation::CounterClockwise;
 #ifndef USE_CUDA
     build_image_rotated_by_90_degrees_cpu(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, PixelType::UCHAR, direction_of_rotation);
 
@@ -369,8 +368,8 @@ int main()
         cv::imshow("image1_uchar", image1_uchar);
         cv::imshow("image2_uchar", image2_uchar);
 
-        cv::imshow("image1_ushort", image1_ushort);
-        cv::imshow("image2_ushort", image2_ushort);
+        //cv::imshow("image1_ushort", image1_ushort);
+        //cv::imshow("image2_ushort", image2_ushort);
     }
     else
     {
