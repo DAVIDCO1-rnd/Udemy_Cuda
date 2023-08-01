@@ -6,7 +6,7 @@
 #include <iostream>
 #include <stdio.h>
 
-//#define USE_CUDA
+#define USE_CUDA
 
 #ifdef USE_CUDA
 #include "cuda_runtime.h"
@@ -88,25 +88,24 @@ void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimensi
 }
 
 #ifdef USE_CUDA
-__global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height, int device_pixel_size)
+template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height, int* device_pixel_size)
 {
     int input_width = device_input_width[0];
     int input_height = device_input_height[0];
     int output_width = input_height;
     int output_height = input_width;
+    int pixel_size = device_pixel_size[0];
 
     int i = threadIdx.x;
-    while (i < input_width * device_pixel_size)
+    while (i < input_width)
     {
         int j = blockIdx.x;
         while (j < input_height)
         {
-            int current_index_input_data = j * input_width + i;
-            unsigned char current_val = device_inputData[current_index_input_data];
-            int current_index_output_data;
-            current_index_output_data = (i + 1) * output_width - j - 1; //clockwise
-            //current_index_output_data = (output_height - i - 1) * output_width + j; //counterclockwise
-            device_outputData[current_index_output_data] = current_val;
+            int current_index_input_data = pixel_size * (i * input_height + j);
+            int current_index_output_data = pixel_size * ((input_height - j - 1) * input_width + i); //Clockwise
+            //int current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i); //CounterClockwise
+            *((T*)(device_outputData + current_index_input_data)) = *(T*)(device_inputData + current_index_output_data);
             j += gridDim.x;
         }
         i += blockDim.x;
@@ -267,32 +266,59 @@ int main()
 #ifdef USE_CUDA
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //create device_inputData
-    unsigned char* device_inputData = NULL;
-    size_t device_inputData_bytes = sizeof(unsigned char) * image1.rows * image1.cols;
-    cudaError_t cudaStatus_inputData_alloc = cudaMalloc((void**)&device_inputData, device_inputData_bytes);
-    if (cudaStatus_inputData_alloc != cudaSuccess) {
+    //create device_inputData1
+    unsigned char* device_inputData1 = NULL;
+    size_t device_inputData_bytes1 = sizeof(unsigned char) * image1_uchar.rows * image1_uchar.cols;
+    cudaError_t cudaStatus_inputData_alloc1 = cudaMalloc((void**)&device_inputData1, device_inputData_bytes1);
+    if (cudaStatus_inputData_alloc1 != cudaSuccess) {
         fprintf(stderr, "cudaMalloc failed!");
         return;
     }
     // Copy input vectors from host memory to GPU buffers.
-    cudaError_t cudaStatus_g2dim1_memcpy = cudaMemcpy(device_inputData, image1.data, device_inputData_bytes, cudaMemcpyHostToDevice);
-    if (cudaStatus_g2dim1_memcpy != cudaSuccess) {
+    cudaError_t cudaStatus_inputData_memcpy1 = cudaMemcpy(device_inputData1, image1_uchar.data, device_inputData_bytes1, cudaMemcpyHostToDevice);
+    if (cudaStatus_inputData_memcpy1 != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
         //free_arrays;
         return;
     }
+
+    //create device_inputData2
+    unsigned char* device_inputData2 = NULL;
+    size_t device_inputData_bytes2 = sizeof(unsigned short) * image1_ushort.rows * image1_ushort.cols;
+    cudaError_t cudaStatus_inputData_alloc2 = cudaMalloc((void**)&device_inputData2, device_inputData_bytes2);
+    if (cudaStatus_inputData_alloc2 != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+        return;
+    }
+    // Copy input vectors from host memory to GPU buffers.
+    cudaError_t cudaStatus_inputData_memcpy2 = cudaMemcpy(device_inputData2, image1_ushort.data, device_inputData_bytes2, cudaMemcpyHostToDevice);
+    if (cudaStatus_inputData_memcpy2 != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+        //free_arrays;
+        return;
+    }
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    unsigned char* device_outputData = NULL;
-    unsigned int device_outputData_num_of_elements = image1.rows * image1.cols;
-    size_t device_outputData_num_of_bytes = device_outputData_num_of_elements * sizeof(unsigned char);
-    cudaError_t cudaStatus_outputData_alloc = cudaMalloc((void**)&device_outputData, device_outputData_num_of_bytes);
-    if (cudaStatus_outputData_alloc != cudaSuccess) {
+    unsigned char* device_outputData1 = NULL;
+    unsigned char* device_outputData2 = NULL;
+    unsigned int device_outputData_num_of_elements = image1_uchar.rows * image1_uchar.cols;
+    size_t device_outputData_num_of_bytes1 = device_outputData_num_of_elements * sizeof(unsigned char);
+    cudaError_t cudaStatus_outputData_alloc1 = cudaMalloc((void**)&device_outputData1, device_outputData_num_of_bytes1);
+    if (cudaStatus_outputData_alloc1 != cudaSuccess) {
         fprintf(stderr, "cudaMalloc failed!");
         //free_arrays;
         return;
     }
+    size_t device_outputData_num_of_bytes2 = device_outputData_num_of_elements * sizeof(unsigned short);
+    cudaError_t cudaStatus_outputData_alloc2 = cudaMalloc((void**)&device_outputData2, device_outputData_num_of_bytes2);
+    if (cudaStatus_outputData_alloc2 != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+        //free_arrays;
+        return;
+    }
+
+
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     //create device_input_width
@@ -303,7 +329,7 @@ int main()
         fprintf(stderr, "cudaMalloc failed!");
         return;
     }
-    cudaError_t cudaStatus_input_width_memcpy = cudaMemcpy(device_input_width, &(image1.cols), device_input_width_bytes, cudaMemcpyHostToDevice);
+    cudaError_t cudaStatus_input_width_memcpy = cudaMemcpy(device_input_width, &(image1_uchar.cols), device_input_width_bytes, cudaMemcpyHostToDevice);
     if (cudaStatus_input_width_memcpy != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
         //free_arrays;
@@ -320,8 +346,42 @@ int main()
         fprintf(stderr, "cudaMalloc failed!");
         return;
     }
-    cudaError_t cudaStatus_input_height_memcpy = cudaMemcpy(device_input_height, &(image1.rows), device_input_height_bytes, cudaMemcpyHostToDevice);
+    cudaError_t cudaStatus_input_height_memcpy = cudaMemcpy(device_input_height, &(image1_uchar.rows), device_input_height_bytes, cudaMemcpyHostToDevice);
     if (cudaStatus_input_height_memcpy != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+        //free_arrays;
+        return;
+    }
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    //create device_uchar_pixel_size
+    int* device_uchar_pixel_size = NULL;
+    size_t device_uchar_pixel_size_bytes = sizeof(int);
+    cudaError_t cudaStatus_uchar_pixel_size_alloc = cudaMalloc((void**)&device_uchar_pixel_size, device_uchar_pixel_size_bytes);
+    if (cudaStatus_uchar_pixel_size_alloc != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+        return;
+    }
+    int uchar_pixel_size = (int)PixelType::UCHAR;
+    cudaError_t cudaStatus_uchar_pixel_size_memcpy = cudaMemcpy(device_uchar_pixel_size, &(uchar_pixel_size), device_uchar_pixel_size_bytes, cudaMemcpyHostToDevice);
+    if (cudaStatus_uchar_pixel_size_memcpy != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy failed!");
+        //free_arrays;
+        return;
+    }
+
+    //create device_ushort_pixel_size
+    int* device_ushort_pixel_size = NULL;
+    size_t device_ushort_pixel_size_bytes = sizeof(int);
+    cudaError_t cudaStatus_ushort_pixel_size_alloc = cudaMalloc((void**)&device_ushort_pixel_size, device_ushort_pixel_size_bytes);
+    if (cudaStatus_ushort_pixel_size_alloc != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed!");
+        return;
+    }
+    int ushort_pixel_size = (int)PixelType::USHORT;
+    cudaError_t cudaStatus_ushort_pixel_size_memcpy = cudaMemcpy(device_ushort_pixel_size, &(ushort_pixel_size), device_ushort_pixel_size_bytes, cudaMemcpyHostToDevice);
+    if (cudaStatus_ushort_pixel_size_memcpy != cudaSuccess) {
         fprintf(stderr, "cudaMemcpy failed!");
         //free_arrays;
         return;
@@ -330,7 +390,8 @@ int main()
     int threadsPerBlock = 256;
     int blocksPerGrid = 256;
 
-    build_image_rotated_by_90_degrees_cuda << < blocksPerGrid, threadsPerBlock >> > (device_inputData, device_outputData, device_input_width, device_input_height);
+    build_image_rotated_by_90_degrees_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size);
+    build_image_rotated_by_90_degrees_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size);
 
     // Check for any errors launching the kernel
     cudaError_t cudaStatusLastError = cudaGetLastError();
@@ -350,14 +411,24 @@ int main()
     }
 
     // Copy output vector from GPU buffer to host memory.
-    unsigned char* outputData = (unsigned char*)malloc(device_outputData_num_of_bytes);
-    cudaError_t cudaStatus_outputData_memcpy = cudaMemcpy(outputData, device_outputData, device_outputData_num_of_bytes, cudaMemcpyDeviceToHost);
-    if (cudaStatus_outputData_memcpy != cudaSuccess) {
-        fprintf(stderr, "cudaMemcpy outputData failed!");
+    unsigned char* outputData1 = (unsigned char*)malloc(device_outputData_num_of_bytes1);
+    cudaError_t cudaStatus_outputData_memcpy1 = cudaMemcpy(outputData1, device_outputData1, device_outputData_num_of_bytes1, cudaMemcpyDeviceToHost);
+    if (cudaStatus_outputData_memcpy1 != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy outputData1 failed!");
         //free_arrays
         return;
     }
-    image2_uchar.data = outputData;
+    image2_uchar.data = outputData1;
+
+    // Copy output vector from GPU buffer to host memory.
+    unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
+    cudaError_t cudaStatus_outputData_memcpy2 = cudaMemcpy(outputData2, device_outputData2, device_outputData_num_of_bytes2, cudaMemcpyDeviceToHost);
+    if (cudaStatus_outputData_memcpy2 != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy outputData2 failed!");
+        //free_arrays
+        return;
+    }
+    image2_ushort.data = outputData1;
 #endif //USE_CUDA
 
 
@@ -369,8 +440,8 @@ int main()
         cv::imshow("image1_ushort", image1_ushort);
         cv::imshow("image2_ushort", image2_ushort);
 
-        cv::imshow("image1_float", image1_float);
-        cv::imshow("image2_float", image2_float);
+        //cv::imshow("image1_float", image1_float);
+        //cv::imshow("image2_float", image2_float);
     }
     else
     {
@@ -380,8 +451,8 @@ int main()
         print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
         print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT);
 
-        print_pixels("image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
-        print_pixels("image2_float", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::FLOAT);
+        //print_pixels("image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
+        //print_pixels("image2_float", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::FLOAT);
     }
 
     int k = cv::waitKey(0); // Wait for a keystroke in the window
