@@ -117,6 +117,8 @@ __device__  inline bool DecodeYXC(int* y, int* x, int* c, int widthImage, int he
 
 template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height, int* device_pixel_size)
 {
+    int is_clockwise = 1;
+
     int input_width = device_input_width[0];
     int input_height = device_input_height[0];
     int output_width = input_height;
@@ -130,8 +132,15 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
         while (j < input_height)
         {
             int current_index_input_data = pixel_size * (i * input_height + j);
-            int current_index_output_data = pixel_size * ((input_height - j - 1) * input_width + i); //Clockwise
-            //int current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i); //CounterClockwise
+            int current_index_output_data;
+            if (is_clockwise == 1)
+            {
+                current_index_output_data = pixel_size * ((input_height - j - 1) * input_width + i); //Clockwise
+            }
+            else
+            {
+                current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i); //CounterClockwise
+            }
             T pixel_value = *(T*)(device_inputData + current_index_output_data);
             *((T*)(device_outputData + current_index_input_data)) = pixel_value;
             j += gridDim.x;
