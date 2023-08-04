@@ -6,11 +6,18 @@
 #include <iostream>
 #include <stdio.h>
 
-//#define USE_CUDA
+#define USE_CUDA
 
 #ifdef USE_CUDA
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
+static void HandleError(cudaError_t err, const char* file, int line) {
+    if (err != cudaSuccess) {
+        printf("%s in %s at line %d\n", cudaGetErrorString(err), file, line);
+        exit(EXIT_FAILURE);
+    }
+}
+#define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 #endif //USE_CUDA
 
 bool read_image_from_file = true;
@@ -88,6 +95,26 @@ void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimensi
 }
 
 #ifdef USE_CUDA
+
+__device__ inline int PixelOffset1D(int x, int channel, int pixelSize, int channelSize)
+{
+    return  x * pixelSize + channel * channelSize;
+}
+
+__device__ inline int PixelOffset(int y, int x, int channel, int stride, int pixelSize, int channelSize)
+{
+    return y * stride + PixelOffset1D(x, channel, pixelSize, channelSize);
+}
+
+__device__  inline bool DecodeYXC(int* y, int* x, int* c, int widthImage, int heightImage)
+{
+    *y = (threadIdx.y) + (blockDim.y) * (blockIdx.y);
+    *x = (threadIdx.x) + (blockDim.x) * (blockIdx.x);
+    *c = (threadIdx.z);
+
+    return (*y >= 0 && *y < heightImage&&* x >= 0 && *x < widthImage);
+}
+
 template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height, int* device_pixel_size)
 {
     int input_width = device_input_width[0];
@@ -271,11 +298,12 @@ int main()
     //create device_inputData1
     unsigned char* device_inputData1 = NULL;
     size_t device_inputData_bytes1 = sizeof(unsigned char) * image1_uchar.rows * image1_uchar.cols;
-    cudaError_t cudaStatus_inputData_alloc1 = cudaMalloc((void**)&device_inputData1, device_inputData_bytes1);
-    if (cudaStatus_inputData_alloc1 != cudaSuccess) {
-        fprintf(stderr, "cudaMalloc failed!");
-        return;
-    }
+    HANDLE_ERROR(cudaMalloc((void**)&device_inputData1, device_inputData_bytes1));
+    //cudaError_t cudaStatus_inputData_alloc1 = cudaMalloc((void**)&device_inputData1, device_inputData_bytes1);
+    //if (cudaStatus_inputData_alloc1 != cudaSuccess) {
+    //    fprintf(stderr, "cudaMalloc failed!");
+    //    return;
+    //}
     // Copy input vectors from host memory to GPU buffers.
     cudaError_t cudaStatus_inputData_memcpy1 = cudaMemcpy(device_inputData1, image1_uchar.data, device_inputData_bytes1, cudaMemcpyHostToDevice);
     if (cudaStatus_inputData_memcpy1 != cudaSuccess) {
