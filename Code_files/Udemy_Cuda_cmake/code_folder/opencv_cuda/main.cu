@@ -115,9 +115,9 @@ __device__  inline bool DecodeYXC(int* y, int* x, int* c, int widthImage, int he
     return (*y >= 0 && *y < heightImage&&* x >= 0 && *x < widthImage);
 }
 
-template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height, int* device_pixel_size)
+template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height, int* device_pixel_size, int is_clockwise)
 {
-    int is_clockwise = 1;
+
 
     int input_width = device_input_width[0];
     int input_height = device_input_height[0];
@@ -319,7 +319,6 @@ int main()
     // Copy input vectors from host memory to GPU buffers.
     HANDLE_ERROR(cudaMemcpy(device_inputData2, image1_ushort.data, device_inputData_bytes2, cudaMemcpyHostToDevice));
 
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     unsigned char* device_outputData1 = NULL;
@@ -330,6 +329,8 @@ int main()
 
     size_t device_outputData_num_of_bytes2 = device_outputData_num_of_elements * sizeof(unsigned short);
     HANDLE_ERROR(cudaMalloc((void**)&device_outputData2, device_outputData_num_of_bytes2));
+
+
 
 
 
@@ -349,6 +350,7 @@ int main()
     size_t device_input_height_bytes = sizeof(int);
     HANDLE_ERROR(cudaMalloc((void**)&device_input_height, device_input_height_bytes));
     HANDLE_ERROR(cudaMemcpy(device_input_height, &(image1_uchar.rows), device_input_height_bytes, cudaMemcpyHostToDevice));
+
 
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -371,8 +373,9 @@ int main()
     int threadsPerBlock = 256;
     int blocksPerGrid = 256;
 
-    build_image_rotated_by_90_degrees_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size);
-    build_image_rotated_by_90_degrees_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size);
+    int is_clockwise = 0;
+    build_image_rotated_by_90_degrees_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, is_clockwise);
+    build_image_rotated_by_90_degrees_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size, is_clockwise);
 
     // Check for any errors launching the kernel
     HANDLE_ERROR(cudaGetLastError());
@@ -392,6 +395,15 @@ int main()
     unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
     HANDLE_ERROR(cudaMemcpy(outputData2, device_outputData2, device_outputData_num_of_bytes2, cudaMemcpyDeviceToHost));
     image2_ushort.data = outputData2;
+
+    HANDLE_ERROR(cudaFree(device_inputData1));
+    HANDLE_ERROR(cudaFree(device_inputData2));
+    HANDLE_ERROR(cudaFree(device_outputData1));
+    HANDLE_ERROR(cudaFree(device_outputData2));
+    HANDLE_ERROR(cudaFree(device_input_width));
+    HANDLE_ERROR(cudaFree(device_input_height));
+    HANDLE_ERROR(cudaFree(device_uchar_pixel_size));
+    HANDLE_ERROR(cudaFree(device_ushort_pixel_size));
 #endif //USE_CUDA
 
 
