@@ -128,10 +128,12 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
     int output_height = input_width;
     int pixel_size = device_pixel_size[0];
 
-    int i = threadIdx.x;
+    int i = blockIdx.x;
+    
+
     while (i < input_width)
     {
-        int j = blockIdx.x;
+        int j = threadIdx.x;
         while (j < input_height)
         {
             int current_index_input_data = pixel_size * (i * input_height + j);
@@ -146,9 +148,9 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
             }
             T pixel_value = *(T*)(device_inputData + current_index_output_data);
             *((T*)(device_outputData + current_index_input_data)) = pixel_value;
-            j += gridDim.x;
+            j += blockDim.x;
         }
-        i += blockDim.x;
+        i += gridDim.x;
     }
 }
 #endif //USE_CUDA
@@ -373,6 +375,22 @@ BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width,
 //    );
 //}
 
+cv::Mat calc_resized_image(cv::Mat image, double scale_factor)
+{
+
+// Calculate the new dimensions based on the scale factor
+    int newWidth = static_cast<int>(image.cols * scale_factor);
+    int newHeight = static_cast<int>(image.rows * scale_factor);
+
+    // Create a new image with the scaled dimensions
+    cv::Mat scaledImage;
+
+    // Resize the image using the resize function
+    cv::resize(image, scaledImage, cv::Size(newWidth, newHeight), cv::INTER_LINEAR);
+
+    return scaledImage;
+}
+
 int main()
 {
     //going back from this folder: ./build/code_folder/Section3.3_spotlights/
@@ -507,12 +525,12 @@ int main()
     int image_width = image1_uchar.cols;
     int num_of_channels = 1;
     
-    //int blocksPerGrid = 256;    //drimDim is two-dimensional
-    //int threadsPerBlock = 256;  //blockDim is three-dimensional
+    int blocksPerGrid = 256;    //drimDim is two-dimensional
+    int threadsPerBlock = 256;  //blockDim is three-dimensional
 
     
-    int threadsPerBlock = 256;  //blockDim is three-dimensional
-    int blocksPerGrid = (image_height * image_height + threadsPerBlock - 1) / threadsPerBlock;    //drimDim is two-dimensional
+    //int threadsPerBlock = image_height;
+    //int blocksPerGrid = (image_height * image_width + threadsPerBlock - 1) / threadsPerBlock;
 
     BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
 
@@ -552,11 +570,17 @@ int main()
 
     if (read_image_from_file == true)
     {
-        cv::imshow("image1_uchar", image1_uchar);
-        cv::imshow("image2_uchar", image2_uchar);
+        double scale_factor = 0.35;
+        cv::Mat resized_image1_uchar = calc_resized_image(image1_uchar, scale_factor);
+        cv::Mat resized_image2_uchar = calc_resized_image(image2_uchar, scale_factor);
+        cv::Mat resized_image1_ushort = calc_resized_image(image1_ushort, scale_factor);
+        cv::Mat resized_image2_ushort = calc_resized_image(image2_ushort, scale_factor);
+        
+        cv::imshow("resized_image1_uchar", resized_image1_uchar);
+        cv::imshow("resized_image2_uchar", resized_image2_uchar);
 
-        cv::imshow("image1_ushort", image1_ushort);
-        cv::imshow("image2_ushort", image2_ushort);
+        //cv::imshow("resized_image1_ushort", resized_image1_ushort);
+        //cv::imshow("resized_image2_ushort", resized_image2_ushort);
 
         //cv::imshow("image1_float", image1_float);
         //cv::imshow("image2_float", image2_float);
