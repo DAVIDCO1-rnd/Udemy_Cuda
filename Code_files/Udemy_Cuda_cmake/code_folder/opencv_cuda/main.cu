@@ -129,11 +129,11 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
     int pixel_size = device_pixel_size[0];
 
     int i = blockIdx.x;
-    
+    int j = threadIdx.x;
 
     while (i < input_width)
     {
-        int j = threadIdx.x;
+        
         while (j < input_height)
         {
             int current_index_input_data = pixel_size * (i * input_height + j);
@@ -161,9 +161,11 @@ void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned ch
     int output_width = input_height;
     int output_height = input_width;
 
-    for (int i = 0; i < input_width; i++)
+    int i = 0;
+    while (i < input_width)
     {
-        for (int j = 0; j < input_height; j++)
+        int j = 0;
+        while (j < input_height)
         {
             int current_index_input_data = pixel_size * (i * input_height + j);
             int current_index_output_data;
@@ -182,12 +184,14 @@ void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned ch
             if (read_image_from_file == false)
             {
                 printf("%d, ", current_index_output_data);
-            }            
+            } 
+            j++;
         }
         if (read_image_from_file == false)
         {
             printf("\n");
         }
+        i++;
     }
 
     if (read_image_from_file == false)
@@ -245,7 +249,7 @@ cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
     return image;
 }
 
-
+#ifdef USE_CUDA
 class BlockAndGridDimensions {
 private:
     int gridSizes[2];
@@ -374,6 +378,7 @@ BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width,
 //        gridSize
 //    );
 //}
+#endif //USE_CUDA
 
 cv::Mat calc_resized_image(cv::Mat image, double scale_factor)
 {
@@ -402,6 +407,7 @@ int main()
     {
         cv::Mat rgb_image1 = cv::imread(image_path);        
         cv::cvtColor(rgb_image1, image1_uchar, cv::COLOR_BGR2GRAY);
+        cv::vconcat(image1_uchar, image1_uchar, image1_uchar);
         if (image1_uchar.empty())
         {
             std::cout << "Could not read the image: " << image_path << std::endl;
@@ -525,12 +531,16 @@ int main()
     int image_width = image1_uchar.cols;
     int num_of_channels = 1;
     
-    int blocksPerGrid = 256;    //drimDim is two-dimensional
-    int threadsPerBlock = 256;  //blockDim is three-dimensional
+    //int blocksPerGrid = 256;    //dridDim is two-dimensional
+    //int threadsPerBlock = 256;  //blockDim is three-dimensional
 
     
-    //int threadsPerBlock = image_height;
-    //int blocksPerGrid = (image_height * image_width + threadsPerBlock - 1) / threadsPerBlock;
+    cudaDeviceProp  prop;
+    int device_index = 0; //For now I assume there's only one GPu device
+    HANDLE_ERROR(cudaGetDeviceProperties(&prop, device_index));
+    int maxThreadsPerBlock = prop.maxThreadsPerBlock;
+    int threadsPerBlock = std::min(image_height, maxThreadsPerBlock);
+    int blocksPerGrid = (image_height * image_width + threadsPerBlock - 1) / threadsPerBlock;
 
     BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
 
@@ -570,7 +580,7 @@ int main()
 
     if (read_image_from_file == true)
     {
-        double scale_factor = 0.35;
+        double scale_factor = 0.25;
         cv::Mat resized_image1_uchar = calc_resized_image(image1_uchar, scale_factor);
         cv::Mat resized_image2_uchar = calc_resized_image(image2_uchar, scale_factor);
         cv::Mat resized_image1_ushort = calc_resized_image(image1_ushort, scale_factor);
