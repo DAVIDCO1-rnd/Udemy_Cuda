@@ -507,8 +507,12 @@ int main()
     int image_width = image1_uchar.cols;
     int num_of_channels = 1;
     
-    int blocksPerGrid = 256;    //drimDim is two-dimensional
+    //int blocksPerGrid = 256;    //drimDim is two-dimensional
+    //int threadsPerBlock = 256;  //blockDim is three-dimensional
+
+    
     int threadsPerBlock = 256;  //blockDim is three-dimensional
+    int blocksPerGrid = (image_height * image_height + threadsPerBlock - 1) / threadsPerBlock;    //drimDim is two-dimensional
 
     BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
 
