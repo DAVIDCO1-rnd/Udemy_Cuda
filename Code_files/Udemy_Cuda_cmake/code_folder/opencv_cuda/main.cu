@@ -128,12 +128,12 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
     int output_height = input_width;
     int pixel_size = device_pixel_size[0];
 
-    int i = blockIdx.x;
-    int j = threadIdx.x;
+    int i = threadIdx.x;
+    
 
     while (i < input_width)
     {
-        
+        int j = blockIdx.x;
         while (j < input_height)
         {
             int current_index_input_data = pixel_size * (i * input_height + j);
@@ -148,9 +148,9 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
             }
             T pixel_value = *(T*)(device_inputData + current_index_output_data);
             *((T*)(device_outputData + current_index_input_data)) = pixel_value;
-            j += blockDim.x;
+            j += gridDim.x;
         }
-        i += gridDim.x;
+        i += blockDim.x;
     }
 }
 #endif //USE_CUDA
