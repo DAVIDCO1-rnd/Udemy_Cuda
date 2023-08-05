@@ -370,10 +370,11 @@ int main()
     int ushort_pixel_size = (int)PixelType::USHORT;
     HANDLE_ERROR(cudaMemcpy(device_ushort_pixel_size, &(ushort_pixel_size), device_ushort_pixel_size_bytes, cudaMemcpyHostToDevice));
 
-    int threadsPerBlock = 256;
+    
     int blocksPerGrid = 256;
+    int threadsPerBlock = 256;
 
-    int is_clockwise = 0;
+    int is_clockwise = 1;
     build_image_rotated_by_90_degrees_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, is_clockwise);
     build_image_rotated_by_90_degrees_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size, is_clockwise);
 
