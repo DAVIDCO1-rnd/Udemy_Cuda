@@ -5,6 +5,7 @@
 #include <string>
 #include <iostream>
 #include <stdio.h>
+#include <cmath>
 
 #define USE_CUDA
 
@@ -23,6 +24,8 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 bool read_image_from_file = true;
 const int height = 3;
 const int width = 5;
+
+
 
 enum class DirectionOfRotation {
     Clockwise = 0,
@@ -240,6 +243,136 @@ cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
     return image;
 }
 
+
+class BlockAndGridDimensions {
+private:
+    int gridSizes[2];
+    int blockSizes[3];
+
+public:
+    BlockAndGridDimensions(int block_sizes[3], int grid_sizes[2]) {
+        for (int i = 0; i < 2; ++i) {
+            gridSizes[i] = grid_sizes[i];
+        }
+
+        for (int i = 0; i < 3; ++i) {
+            blockSizes[i] = block_sizes[i];
+        }
+    }
+};
+
+//c++ code:
+BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width, int height)
+{
+    cudaDeviceProp  prop;
+    int device_index = 0; //For now I assume there's only one GPu device
+    HANDLE_ERROR(cudaGetDeviceProperties(&prop, device_index));
+    int maxThreadsPerBlock = prop.maxThreadsPerBlock;
+    int maxBlockSize = maxThreadsPerBlock / 2;
+
+    int blockSize[3];
+    int gridSize[2];
+
+    // Calculate optimal block size, depends on the number of channels in picture
+    if (width * height * channels < maxBlockSize)
+    {
+        blockSize[0] = width;
+        blockSize[1] = height;
+    }
+    else
+    {
+        int warpSize = prop.warpSize;
+        float dWarp = warpSize / (float)channels;
+        int maxSize = (int)(maxBlockSize / (float)channels);
+
+        if (width <= maxSize)
+            blockSize[0] = width;
+        else
+        {
+            float threadsX = 0.0f;
+            while (threadsX < maxSize)
+            {
+                threadsX += dWarp;
+
+            }
+            blockSize[0] = (int)threadsX;
+        }
+        blockSize[1] = maxSize / blockSize[0];
+        if (blockSize[1] == 0)
+        {
+            blockSize[1] = 1;
+        }
+    }
+
+    //block size 3rd dimension is always the number of channels.
+    blockSize[2] = channels;
+
+    //calculate grid size. (number of necessary blocks to cover the whole picture) 
+    gridSize[0] = (int)ceil((double)width / blockSize[0]);
+    gridSize[1] = (int)ceil((double)height / blockSize[1]);
+
+    BlockAndGridDimensions* block_and_grid_dimensions = new BlockAndGridDimensions(blockSize, gridSize);
+    return block_and_grid_dimensions;
+
+    //return new BlockAndGridDimensions(
+    //    blockSize,
+    //    gridSize
+    //);
+}
+
+//c# code:
+//public static BlockAndGridDimensions CalculateBlockAndGridDimensions(int channels, int width, int height)
+//{
+//
+//    var maxBlockSize = DeviceProperties.deviceThreadsPerBlock / 2;
+//
+//
+//    var blockSize = new int[3];
+//    var gridSize = new int[2];
+//
+//    // Calculate optimal block size, depends on the number of channels in picture
+//    if (width * height * channels < maxBlockSize)
+//    {
+//        blockSize[0] = width;
+//        blockSize[1] = height;
+//    }
+//    else
+//    {
+//        var dWarp = DeviceProperties.deviceWarpSize / (float)channels;
+//        var maxSize = (int)(maxBlockSize / (float)channels);
+//
+//        if (width <= maxSize)
+//            blockSize[0] = width;
+//        else
+//        {
+//            var threadsX = 0.0f;
+//            while (threadsX < maxSize)
+//            {
+//                threadsX += dWarp;
+//
+//            }
+//            blockSize[0] = (int)threadsX;
+//        }
+//        blockSize[1] = maxSize / blockSize[0];
+//        if (blockSize[1] == 0)
+//        {
+//            blockSize[1] = 1;
+//        }
+//    }
+//
+//    //block size 3rd dimension is always the number of channels.
+//    blockSize[2] = channels;
+//
+//    //calculate grid size. (number of necessary blocks to cover the whole picture) 
+//    gridSize[0] = (int)Math.Ceiling((double)width / blockSize[0]);
+//    gridSize[1] = (int)Math.Ceiling((double)height / blockSize[1]);
+//
+//    return new BlockAndGridDimensions(
+//        blockSize,
+//        gridSize
+//    );
+//}
+
 int main()
 {
     //going back from this folder: ./build/code_folder/Section3.3_spotlights/
@@ -370,9 +503,14 @@ int main()
     int ushort_pixel_size = (int)PixelType::USHORT;
     HANDLE_ERROR(cudaMemcpy(device_ushort_pixel_size, &(ushort_pixel_size), device_ushort_pixel_size_bytes, cudaMemcpyHostToDevice));
 
+    int image_height = image1_uchar.rows;
+    int image_width = image1_uchar.cols;
+    int num_of_channels = 1;
     
-    int blocksPerGrid = 256;
-    int threadsPerBlock = 256;
+    int blocksPerGrid = 256;    //drimDim is two-dimensional
+    int threadsPerBlock = 256;  //blockDim is three-dimensional
+
+    BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
 
     int is_clockwise = 1;
     build_image_rotated_by_90_degrees_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, is_clockwise);
