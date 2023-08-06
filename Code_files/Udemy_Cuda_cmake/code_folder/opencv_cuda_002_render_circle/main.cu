@@ -118,7 +118,7 @@ __device__  inline bool DecodeYXC(int* y, int* x, int* c, int widthImage, int he
     return (*y >= 0 && *y < heightImage&&* x >= 0 && *x < widthImage);
 }
 
-template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height, int* device_pixel_size, int is_clockwise)
+template<class T> __global__ void render_circle_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height, int* device_pixel_size, int is_clockwise, T max_val)
 {
 
 
@@ -130,51 +130,64 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
 
     int x = threadIdx.x + blockIdx.x * blockDim.x;
     int y = threadIdx.y + blockIdx.y * blockDim.y;
-    int offset = x + y * blockDim.x * gridDim.x;
+    int current_index_input_data = pixel_size * (y + x * blockDim.y * gridDim.y);
 
     float fx = x - input_width / 2;
     float fy = y - input_height / 2;
     float distance_from_center_of_image = sqrtf(fx * fx + fy * fy);
 
-    *((T*)(device_outputData + offset)) = 0;
-    if (distance_from_center_of_image < 30)
+    if (x < input_width && y < input_height)
     {
-        T pixel_value = 255;
-        *((T*)(device_outputData + offset)) = pixel_value;
+        unsigned char val = 0;
+        *((T*)(device_outputData + current_index_input_data)) = (T)val;
+        if (distance_from_center_of_image < 120)
+        {
+            *((T*)(device_outputData + current_index_input_data)) = max_val;
+        }
     }
 
-    //int i = x;
-    //int j = y;
 
-    ////int i = threadIdx.x;
-    //
 
-    //while (i < input_width)
+    //int x = threadIdx.x;
+    //while (x < input_width)
     //{
-    //    //int j = blockIdx.x;
-    //    while (j < input_height)
+    //    int y = blockIdx.x;
+    //    while (y < input_height)
     //    {
-    //        int current_index_input_data = pixel_size * (i * input_height + j);
+    //        int current_index_input_data = pixel_size * (x * input_height + y);
     //        int current_index_output_data;
     //        if (is_clockwise == 1)
     //        {
-    //            current_index_output_data = pixel_size * ((input_height - j - 1) * input_width + i); //Clockwise
+    //            current_index_output_data = pixel_size * ((input_height - y - 1) * input_width + x); //Clockwise
     //        }
     //        else
     //        {
-    //            current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i); //CounterClockwise
+    //            current_index_output_data = pixel_size * (y * input_width + input_width - 1 - x); //CounterClockwise
     //        }
-    //        T pixel_value = *(T*)(device_inputData + current_index_output_data);
-    //        *((T*)(device_outputData + current_index_input_data)) = pixel_value;
-    //        j += gridDim.x;
+    //        T pixel_value = 0;
+
+    //        float fx = x - input_width / 2;
+    //        float fy = y - input_height / 2;
+    //        float distance_from_center_of_image = sqrtf(fx * fx + fy * fy);
+
+    //        *((T*)(device_outputData + current_index_input_data)) = 0;
+    //        if (distance_from_center_of_image < 120)
+    //        {
+    //            unsigned char pixel_value = 255;
+    //            *((T*)(device_outputData + current_index_input_data)) = (T)pixel_value;
+    //        }
+
+
+    //        //*((T*)(device_outputData + current_index_input_data)) = pixel_value;
+    //        y += gridDim.x;
     //    }
-    //    i += blockDim.x;
+    //    x += blockDim.x;
     //}
 }
 #endif //USE_CUDA
 
 template <class T>
-void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, int pixel_size, int direction_of_rotation)
+void render_circle_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, int pixel_size, int direction_of_rotation)
 {
     int output_width = input_height;
     int output_height = input_width;
@@ -196,8 +209,18 @@ void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned ch
             {
                 current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i);
             }
-            T pixel_value = *(T*)(inputData + current_index_output_data);
-            *((T*)(outputData + current_index_input_data)) = pixel_value;
+            T pixel_value = 0;
+
+            float fx = i - input_width / 2;
+            float fy = j - input_height / 2;
+            float distance_from_center_of_image = sqrtf(fx * fx + fy * fy);
+
+            *((T*)(outputData + current_index_input_data)) = 0;
+            if (distance_from_center_of_image < 120)
+            {
+                unsigned char pixel_value = 255;
+                *((T*)(outputData + current_index_input_data)) = (T)pixel_value;
+            }
             
             if (read_image_from_file == false)
             {
@@ -426,7 +449,7 @@ int main()
         //cv::Mat rgb_image1 = cv::imread(image_path);        
         //cv::cvtColor(rgb_image1, image1_uchar, cv::COLOR_BGR2GRAY);
 
-        image1_uchar = cv::Mat(256, 256, CV_8UC1, cv::Scalar(0));
+        image1_uchar = cv::Mat(1280, 720, CV_8UC1, cv::Scalar(0));
 
         //cv::vconcat(image1_uchar, image1_uchar, image1_uchar);
         if (image1_uchar.empty())
@@ -472,11 +495,11 @@ int main()
 
     DirectionOfRotation direction_of_rotation = DirectionOfRotation::Clockwise;
 #ifndef USE_CUDA
-    build_image_rotated_by_90_degrees_cpu<unsigned char>(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, (int)PixelType::UCHAR, (int)direction_of_rotation);
+    render_circle_cpu<unsigned char>(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, (int)PixelType::UCHAR, (int)direction_of_rotation);
 
-    build_image_rotated_by_90_degrees_cpu<unsigned short>(image1_ushort.data, image2_ushort.data, image1_ushort.cols, image1_ushort.rows, (int)PixelType::USHORT, (int)direction_of_rotation);
+    render_circle_cpu<unsigned short>(image1_ushort.data, image2_ushort.data, image1_ushort.cols, image1_ushort.rows, (int)PixelType::USHORT, (int)direction_of_rotation);
 
-    build_image_rotated_by_90_degrees_cpu<float>(image1_float.data, image2_float.data, image1_float.cols, image1_float.rows, (int)PixelType::FLOAT, (int)direction_of_rotation);
+    render_circle_cpu<float>(image1_float.data, image2_float.data, image1_float.cols, image1_float.rows, (int)PixelType::FLOAT, (int)direction_of_rotation);
 #endif
 
 #ifdef USE_CUDA
@@ -576,8 +599,10 @@ int main()
     BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
 
     int is_clockwise = 1;
-    build_image_rotated_by_90_degrees_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, is_clockwise);
-    build_image_rotated_by_90_degrees_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size, is_clockwise);
+    unsigned char max_val_uchar = 255;
+    unsigned short max_val_ushort = 65535;
+    render_circle_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, is_clockwise, max_val_uchar);
+    render_circle_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size, is_clockwise, max_val_ushort);
 
     // Check for any errors launching the kernel
     HANDLE_ERROR(cudaGetLastError());
@@ -620,8 +645,8 @@ int main()
         cv::imshow("resized_image1_uchar", resized_image1_uchar);
         cv::imshow("resized_image2_uchar", resized_image2_uchar);
 
-        //cv::imshow("resized_image1_ushort", resized_image1_ushort);
-        //cv::imshow("resized_image2_ushort", resized_image2_ushort);
+        cv::imshow("resized_image1_ushort", resized_image1_ushort);
+        cv::imshow("resized_image2_ushort", resized_image2_ushort);
 
         //cv::imshow("image1_float", image1_float);
         //cv::imshow("image2_float", image2_float);
