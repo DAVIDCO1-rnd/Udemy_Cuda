@@ -8,6 +8,8 @@
 #include <cmath>
 
 #define USE_CUDA
+#define USE_X_DIMENSIONS_ONLY
+
 
 #ifdef USE_CUDA
 #include "cuda_runtime.h"
@@ -24,6 +26,15 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 bool read_image_from_file = true;
 const int height = 3;
 const int width = 5;
+
+#ifndef USE_X_DIMENSIONS_ONLY
+enum class ThreadsAndBlocksCalculations {
+    Use_optimal_function = 0,
+    Use_threads_as_warp_size = 1
+};
+#endif //USE_X_DIMENSIONS_ONLY
+
+
 
 
 
@@ -120,14 +131,36 @@ __device__  inline bool DecodeYXC(int* y, int* x, int* c, int widthImage, int he
 
 template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height, int* device_pixel_size, int is_clockwise)
 {
-
-
     int input_width = device_input_width[0];
     int input_height = device_input_height[0];
     int output_width = input_height;
     int output_height = input_width;
     int pixel_size = device_pixel_size[0];
 
+#ifdef USE_X_DIMENSIONS_ONLY
+    int x = threadIdx.x;
+    while (x < input_width)
+    {
+        int y = blockIdx.x;
+        while (y < input_height)
+        {
+            int current_index_input_data = pixel_size * (x * input_height + y);
+            int current_index_output_data;
+            if (is_clockwise == 1)
+            {
+                current_index_output_data = pixel_size * ((input_height - y - 1) * input_width + x); //Clockwise
+            }
+            else
+            {
+                current_index_output_data = pixel_size * (y * input_width + input_width - 1 - x); //CounterClockwise
+            }
+            T pixel_value = *(T*)(device_inputData + current_index_output_data);
+            *((T*)(device_outputData + current_index_input_data)) = pixel_value;
+            y += gridDim.x;
+        }
+        x += blockDim.x;
+    }
+#else //USE_X_DIMENSIONS_ONLY
     int x = threadIdx.x + blockIdx.x * blockDim.x;
     int y = threadIdx.y + blockIdx.y * blockDim.y;
     int current_index_input_data = pixel_size * (y + x * input_height);
@@ -145,33 +178,7 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
         T pixel_value = *(T*)(device_inputData + current_index_output_data);
         *((T*)(device_outputData + current_index_input_data)) = pixel_value;
     }
-
-
-
-    //int x = threadIdx.x;
-    //
-
-    //while (x < input_width)
-    //{
-    //    int y = blockIdx.x;
-    //    while (y < input_height)
-    //    {
-    //        int current_index_input_data = pixel_size * (x * input_height + y);
-    //        int current_index_output_data;
-    //        if (is_clockwise == 1)
-    //        {
-    //            current_index_output_data = pixel_size * ((input_height - y - 1) * input_width + x); //Clockwise
-    //        }
-    //        else
-    //        {
-    //            current_index_output_data = pixel_size * (y * input_width + input_width - 1 - x); //CounterClockwise
-    //        }
-    //        T pixel_value = *(T*)(device_inputData + current_index_output_data);
-    //        *((T*)(device_outputData + current_index_input_data)) = pixel_value;
-    //        y += gridDim.x;
-    //    }
-    //    x += blockDim.x;
-    //}
+#endif //USE_X_DIMENSIONS_ONLY
 }
 #endif //USE_CUDA
 
@@ -411,6 +418,11 @@ cv::Mat calc_resized_image(cv::Mat image, double scale_factor)
 
 int main()
 {
+#ifndef USE_X_DIMENSIONS_ONLY
+    ThreadsAndBlocksCalculations threads_and_blocks_calculations = ThreadsAndBlocksCalculations::Use_optimal_function;
+#endif //USE_X_DIMENSIONS_ONLY
+
+    
     //going back from this folder: ./build/code_folder/Section3.3_spotlights/
     std::string image_path = "../../../code_folder/opencv_cuda/images/balloons.jpg";
     cv::Mat image1_uchar;
@@ -562,19 +574,34 @@ int main()
     int num_of_blocks_x = (image_width + num_of_threads_x - 1) / num_of_threads_x;
     int num_of_blocks_y = (image_height + num_of_threads_y - 1) / num_of_threads_y;
 
-    dim3 blocksPerGrid(num_of_blocks_x, num_of_blocks_y);
-    dim3 threadsPerBlock(num_of_threads_x, num_of_threads_y);
+    dim3 blocksPerGrid;
+    dim3 threadsPerBlock;
 
-    BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
+#ifdef USE_X_DIMENSIONS_ONLY
+    blocksPerGrid = dim3(256, 1, 1);
+    threadsPerBlock = dim3(256, 1, 1);
+#else //USE_X_DIMENSIONS_ONLY
+    if (threads_and_blocks_calculations == ThreadsAndBlocksCalculations::Use_optimal_function)
+    {
+        BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
+        blocksPerGrid = block_and_grid_dims->blocksPerGrid;
+        threadsPerBlock = block_and_grid_dims->threadsPerBlock;
+    }
+    else if(threads_and_blocks_calculations == ThreadsAndBlocksCalculations::Use_threads_as_warp_size)
+    {
+        blocksPerGrid = dim3(num_of_blocks_x, num_of_blocks_y, 1);
+        threadsPerBlock = dim3(num_of_threads_x, num_of_threads_y);
+    }
+#endif  //USE_X_DIMENSIONS_ONLY
 
-    blocksPerGrid = block_and_grid_dims->blocksPerGrid;
-    threadsPerBlock = block_and_grid_dims->threadsPerBlock;
+
+    int is_clockwise = 1;
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
     cudaEventCreate(&stop);
     cudaEventRecord(start);
-    int is_clockwise = 1;
+
     build_image_rotated_by_90_degrees_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, is_clockwise);
     build_image_rotated_by_90_degrees_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size, is_clockwise);
     cudaEventRecord(stop);
