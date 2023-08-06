@@ -271,19 +271,12 @@ cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
 
 #ifdef USE_CUDA
 class BlockAndGridDimensions {
-private:
-    int gridSizes[2];
-    int blockSizes[3];
-
 public:
-    BlockAndGridDimensions(int block_sizes[3], int grid_sizes[2]) {
-        for (int i = 0; i < 2; ++i) {
-            gridSizes[i] = grid_sizes[i];
-        }
-
-        for (int i = 0; i < 3; ++i) {
-            blockSizes[i] = block_sizes[i];
-        }
+    dim3 blocksPerGrid;
+    dim3 threadsPerBlock;
+    BlockAndGridDimensions(dim3 block_sizes, dim3 grid_sizes) {
+        blocksPerGrid = grid_sizes;
+        threadsPerBlock = block_sizes;
     }
 };
 
@@ -296,14 +289,14 @@ BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width,
     int maxThreadsPerBlock = prop.maxThreadsPerBlock;
     int maxBlockSize = maxThreadsPerBlock / 2;
 
-    int blockSize[3];
-    int gridSize[2];
+    dim3 blockSize;
+    dim3 gridSize;
 
     // Calculate optimal block size, depends on the number of channels in picture
     if (width * height * channels < maxBlockSize)
     {
-        blockSize[0] = width;
-        blockSize[1] = height;
+        blockSize.x = width;
+        blockSize.y = height;
     }
     else
     {
@@ -312,7 +305,7 @@ BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width,
         int maxSize = (int)(maxBlockSize / (float)channels);
 
         if (width <= maxSize)
-            blockSize[0] = width;
+            blockSize.x = width;
         else
         {
             float threadsX = 0.0f;
@@ -321,21 +314,21 @@ BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width,
                 threadsX += dWarp;
 
             }
-            blockSize[0] = (int)threadsX;
+            blockSize.x = (int)threadsX;
         }
-        blockSize[1] = maxSize / blockSize[0];
-        if (blockSize[1] == 0)
+        blockSize.y = maxSize / blockSize.x;
+        if (blockSize.y == 0)
         {
-            blockSize[1] = 1;
+            blockSize.y = 1;
         }
     }
 
     //block size 3rd dimension is always the number of channels.
-    blockSize[2] = channels;
+    blockSize.z = channels;
 
     //calculate grid size. (number of necessary blocks to cover the whole picture) 
-    gridSize[0] = (int)ceil((double)width / blockSize[0]);
-    gridSize[1] = (int)ceil((double)height / blockSize[1]);
+    gridSize.x = (int)ceil((double)width / blockSize.x);
+    gridSize.y = (int)ceil((double)height / blockSize.y);
 
     BlockAndGridDimensions* block_and_grid_dimensions = new BlockAndGridDimensions(blockSize, gridSize);
     return block_and_grid_dimensions;
@@ -562,8 +555,8 @@ int main()
     //int threadsPerBlock = std::min(image_height, maxThreadsPerBlock);
     //int blocksPerGrid = (image_height * image_width + threadsPerBlock - 1) / threadsPerBlock;
 
-    int num_of_threads_x = 16;
-    int num_of_threads_y = 16;
+    int num_of_threads_x = 32;
+    int num_of_threads_y = 32;
 
     int num_of_blocks_x = (image_width + num_of_threads_x - 1) / num_of_threads_x;
     int num_of_blocks_y = (image_height + num_of_threads_y - 1) / num_of_threads_y;
@@ -572,6 +565,9 @@ int main()
     dim3 threadsPerBlock(num_of_threads_x, num_of_threads_y);
 
     BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
+
+    blocksPerGrid = block_and_grid_dims->blocksPerGrid;
+    threadsPerBlock = block_and_grid_dims->threadsPerBlock;
 
     int is_clockwise = 1;
     build_image_rotated_by_90_degrees_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, is_clockwise);
