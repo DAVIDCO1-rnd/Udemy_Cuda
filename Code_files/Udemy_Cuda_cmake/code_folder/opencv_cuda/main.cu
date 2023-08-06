@@ -21,9 +21,9 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 #endif //USE_CUDA
 
-bool read_image_from_file = false;
+bool read_image_from_file = true;
 const int height = 3;
-const int width = 6;
+const int width = 5;
 
 
 
@@ -130,7 +130,7 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
 
     int x = threadIdx.x + blockIdx.x * blockDim.x;
     int y = threadIdx.y + blockIdx.y * blockDim.y;
-    int current_index_input_data = pixel_size * (y + x * blockDim.y * gridDim.y);
+    int current_index_input_data = pixel_size * (y + x * input_height);
     if (x < input_width && y < input_height)
     {
         int current_index_output_data;
@@ -447,9 +447,9 @@ int main()
         //};
 
         uchar image_data[height][width] = {
-           {0x00, 0x01, 0x02, 0x03, 0x04, 0x05},
-           {0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
-           {0x12, 0x13, 0x14, 0x15, 0x16, 0x17}
+           {0x00, 0x01, 0x02, 0x03, 0x04},
+           {0x05, 0x06, 0x07, 0x08, 0x09},
+           {0x10, 0x11, 0x12, 0x13, 0x14}
         };
         image1_uchar = build_image_from_data(image_data, PixelType::UCHAR);        
         print_pixels("built-in image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
@@ -562,8 +562,8 @@ int main()
     //int threadsPerBlock = std::min(image_height, maxThreadsPerBlock);
     //int blocksPerGrid = (image_height * image_width + threadsPerBlock - 1) / threadsPerBlock;
 
-    int num_of_threads_x = 3;
-    int num_of_threads_y = 3;
+    int num_of_threads_x = 16;
+    int num_of_threads_y = 16;
 
     int num_of_blocks_x = (image_width + num_of_threads_x - 1) / num_of_threads_x;
     int num_of_blocks_y = (image_height + num_of_threads_y - 1) / num_of_threads_y;
