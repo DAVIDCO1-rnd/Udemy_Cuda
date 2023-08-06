@@ -4,7 +4,7 @@ set(sources_folder "${CMAKE_CURRENT_SOURCE_DIR}")
 file(GLOB HEADERS_FILES "${includes_folder}/*.h" "${includes_folder}/*.hpp" "${includes_folder}/*.hh")
 file(GLOB SOURCES_FILES "${sources_folder}/*.cpp" "${sources_folder}/*.c" "${sources_folder}/*.cu")
 
-set(OpenCV_main_folder opencv_4.3.0)
+set(OpenCV_main_folder "../../../../opencv_4.3.0")
 set(OpenCV_INCLUDE_Folder "${CMAKE_CURRENT_SOURCE_DIR}/${OpenCV_main_folder}/build/include")
 set(OpenCV_LIBS_Folder "${CMAKE_CURRENT_SOURCE_DIR}/${OpenCV_main_folder}/build/x64/vc15/lib")
 set(OpenCV_DLL_Folder "${CMAKE_CURRENT_SOURCE_DIR}/${OpenCV_main_folder}/build/x64/vc15/bin")
