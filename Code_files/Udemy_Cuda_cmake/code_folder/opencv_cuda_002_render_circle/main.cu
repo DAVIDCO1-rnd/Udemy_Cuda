@@ -489,7 +489,7 @@ int main()
 
     cv::Mat image2_uchar(image1_uchar.cols, image1_uchar.rows, CV_8UC1);
     cv::Mat image2_ushort(image1_ushort.cols, image1_ushort.rows, CV_16UC1);
-    cv::Mat image2_float(image1_ushort.cols, image1_ushort.rows, CV_32FC1);
+    cv::Mat image2_float(image1_float.cols, image1_float.rows, CV_32FC1);
 
 
 

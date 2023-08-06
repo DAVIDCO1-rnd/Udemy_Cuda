@@ -128,30 +128,46 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
     int output_height = input_width;
     int pixel_size = device_pixel_size[0];
 
-    int i = threadIdx.x;
-    
-
-    while (i < input_width)
+    int x = threadIdx.x + blockIdx.x * blockDim.x;
+    int y = threadIdx.y + blockIdx.y * blockDim.y;
+    int current_index_input_data = pixel_size * (y + x * blockDim.y * gridDim.y);
+    int current_index_output_data;
+    if (is_clockwise == 1)
     {
-        int j = blockIdx.x;
-        while (j < input_height)
-        {
-            int current_index_input_data = pixel_size * (i * input_height + j);
-            int current_index_output_data;
-            if (is_clockwise == 1)
-            {
-                current_index_output_data = pixel_size * ((input_height - j - 1) * input_width + i); //Clockwise
-            }
-            else
-            {
-                current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i); //CounterClockwise
-            }
-            T pixel_value = *(T*)(device_inputData + current_index_output_data);
-            *((T*)(device_outputData + current_index_input_data)) = pixel_value;
-            j += gridDim.x;
-        }
-        i += blockDim.x;
+        current_index_output_data = pixel_size * ((input_height - y - 1) * input_width + x); //Clockwise
     }
+    else
+    {
+        current_index_output_data = pixel_size * (y * input_width + input_width - 1 - x); //CounterClockwise
+    }
+    T pixel_value = *(T*)(device_inputData + current_index_output_data);
+    *((T*)(device_outputData + current_index_input_data)) = pixel_value;
+
+
+    //int x = threadIdx.x;
+    //
+
+    //while (x < input_width)
+    //{
+    //    int y = blockIdx.x;
+    //    while (y < input_height)
+    //    {
+    //        int current_index_input_data = pixel_size * (x * input_height + y);
+    //        int current_index_output_data;
+    //        if (is_clockwise == 1)
+    //        {
+    //            current_index_output_data = pixel_size * ((input_height - y - 1) * input_width + x); //Clockwise
+    //        }
+    //        else
+    //        {
+    //            current_index_output_data = pixel_size * (y * input_width + input_width - 1 - x); //CounterClockwise
+    //        }
+    //        T pixel_value = *(T*)(device_inputData + current_index_output_data);
+    //        *((T*)(device_outputData + current_index_input_data)) = pixel_value;
+    //        y += gridDim.x;
+    //    }
+    //    x += blockDim.x;
+    //}
 }
 #endif //USE_CUDA
 
@@ -445,7 +461,7 @@ int main()
 
     cv::Mat image2_uchar(image1_uchar.cols, image1_uchar.rows, CV_8UC1);
     cv::Mat image2_ushort(image1_ushort.cols, image1_ushort.rows, CV_16UC1);
-    cv::Mat image2_float(image1_ushort.cols, image1_ushort.rows, CV_32FC1);
+    cv::Mat image2_float(image1_float.cols, image1_float.rows, CV_32FC1);
 
 
 
