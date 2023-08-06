@@ -128,30 +128,48 @@ template<class T> __global__ void build_image_rotated_by_90_degrees_cuda(unsigne
     int output_height = input_width;
     int pixel_size = device_pixel_size[0];
 
-    int i = threadIdx.x;
-    
+    int x = threadIdx.x + blockIdx.x * blockDim.x;
+    int y = threadIdx.y + blockIdx.y * blockDim.y;
+    int offset = x + y * blockDim.x * gridDim.x;
 
-    while (i < input_width)
+    float fx = x - input_width / 2;
+    float fy = y - input_height / 2;
+    float distance_from_center_of_image = sqrtf(fx * fx + fy * fy);
+
+    *((T*)(device_outputData + offset)) = 0;
+    if (distance_from_center_of_image < 30)
     {
-        int j = blockIdx.x;
-        while (j < input_height)
-        {
-            int current_index_input_data = pixel_size * (i * input_height + j);
-            int current_index_output_data;
-            if (is_clockwise == 1)
-            {
-                current_index_output_data = pixel_size * ((input_height - j - 1) * input_width + i); //Clockwise
-            }
-            else
-            {
-                current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i); //CounterClockwise
-            }
-            T pixel_value = *(T*)(device_inputData + current_index_output_data);
-            *((T*)(device_outputData + current_index_input_data)) = pixel_value;
-            j += gridDim.x;
-        }
-        i += blockDim.x;
+        T pixel_value = 255;
+        *((T*)(device_outputData + offset)) = pixel_value;
     }
+
+    //int i = x;
+    //int j = y;
+
+    ////int i = threadIdx.x;
+    //
+
+    //while (i < input_width)
+    //{
+    //    //int j = blockIdx.x;
+    //    while (j < input_height)
+    //    {
+    //        int current_index_input_data = pixel_size * (i * input_height + j);
+    //        int current_index_output_data;
+    //        if (is_clockwise == 1)
+    //        {
+    //            current_index_output_data = pixel_size * ((input_height - j - 1) * input_width + i); //Clockwise
+    //        }
+    //        else
+    //        {
+    //            current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i); //CounterClockwise
+    //        }
+    //        T pixel_value = *(T*)(device_inputData + current_index_output_data);
+    //        *((T*)(device_outputData + current_index_input_data)) = pixel_value;
+    //        j += gridDim.x;
+    //    }
+    //    i += blockDim.x;
+    //}
 }
 #endif //USE_CUDA
 
@@ -405,9 +423,12 @@ int main()
     cv::Mat image1_float;
     if (read_image_from_file == true)
     {
-        cv::Mat rgb_image1 = cv::imread(image_path);        
-        cv::cvtColor(rgb_image1, image1_uchar, cv::COLOR_BGR2GRAY);
-        cv::vconcat(image1_uchar, image1_uchar, image1_uchar);
+        //cv::Mat rgb_image1 = cv::imread(image_path);        
+        //cv::cvtColor(rgb_image1, image1_uchar, cv::COLOR_BGR2GRAY);
+
+        image1_uchar = cv::Mat(256, 256, CV_8UC1, cv::Scalar(0));
+
+        //cv::vconcat(image1_uchar, image1_uchar, image1_uchar);
         if (image1_uchar.empty())
         {
             std::cout << "Could not read the image: " << image_path << std::endl;
@@ -539,8 +560,18 @@ int main()
     int device_index = 0; //For now I assume there's only one GPu device
     HANDLE_ERROR(cudaGetDeviceProperties(&prop, device_index));
     int maxThreadsPerBlock = prop.maxThreadsPerBlock;
-    int threadsPerBlock = std::min(image_height, maxThreadsPerBlock);
-    int blocksPerGrid = (image_height * image_width + threadsPerBlock - 1) / threadsPerBlock;
+
+    //int threadsPerBlock = std::min(image_height, maxThreadsPerBlock);
+    //int blocksPerGrid = (image_height * image_width + threadsPerBlock - 1) / threadsPerBlock;
+
+    int num_of_threads_x = 16;
+    int num_of_threads_y = 16;
+
+    int num_of_blocks_x = image_width / num_of_threads_x;
+    int num_of_blocks_y = image_height / num_of_threads_y;
+
+    dim3 blocksPerGrid(num_of_blocks_x, num_of_blocks_y);
+    dim3 threadsPerBlock(num_of_threads_x, num_of_threads_y);
 
     BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
 
