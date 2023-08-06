@@ -421,6 +421,7 @@ int main()
         cv::Mat rgb_image1 = cv::imread(image_path);        
         cv::cvtColor(rgb_image1, image1_uchar, cv::COLOR_BGR2GRAY);
         cv::vconcat(image1_uchar, image1_uchar, image1_uchar);
+        cv::hconcat(image1_uchar, image1_uchar, image1_uchar);
         if (image1_uchar.empty())
         {
             std::cout << "Could not read the image: " << image_path << std::endl;
@@ -569,9 +570,19 @@ int main()
     blocksPerGrid = block_and_grid_dims->blocksPerGrid;
     threadsPerBlock = block_and_grid_dims->threadsPerBlock;
 
+    cudaEvent_t start, stop;
+    cudaEventCreate(&start);
+    cudaEventCreate(&stop);
+    cudaEventRecord(start);
     int is_clockwise = 1;
     build_image_rotated_by_90_degrees_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, is_clockwise);
     build_image_rotated_by_90_degrees_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size, is_clockwise);
+    cudaEventRecord(stop);
+
+    cudaEventSynchronize(stop);
+    float milliseconds = 0;
+    cudaEventElapsedTime(&milliseconds, start, stop);
+    printf("gpu time = milliseconds =%.8f\n", milliseconds);
 
     // Check for any errors launching the kernel
     HANDLE_ERROR(cudaGetLastError());
@@ -600,6 +611,7 @@ int main()
     HANDLE_ERROR(cudaFree(device_input_height));
     HANDLE_ERROR(cudaFree(device_uchar_pixel_size));
     HANDLE_ERROR(cudaFree(device_ushort_pixel_size));
+
 #endif //USE_CUDA
 
 
