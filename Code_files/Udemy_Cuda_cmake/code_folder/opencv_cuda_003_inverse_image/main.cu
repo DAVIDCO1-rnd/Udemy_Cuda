@@ -23,7 +23,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 #endif //USE_CUDA
 
-bool read_image_from_file = true;
+bool read_image_from_file = false;
 const int height = 3;
 const int width = 5;
 
@@ -581,18 +581,27 @@ int main()
     cudaEventRecord(start);
 
 
-    unsigned char max_val = 255;
+    unsigned char max_val_uchar = 255;
     int alphaChannelNum = -1;
     int channelSize = 1;
     int input_image_width = image1_uchar.cols;
     int input_image_height = image1_uchar.rows;
-    int strideSourceImage = input_image_width * uchar_pixel_size;
-    int strideResultImage = input_image_width * uchar_pixel_size;
+    int uchar_strideSourceImage = input_image_width * uchar_pixel_size;
+    int uchar_strideResultImage = input_image_width * uchar_pixel_size;
     
     InvertImageKernel<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1,
-        max_val, alphaChannelNum, uchar_pixel_size, channelSize,
+        max_val_uchar, alphaChannelNum, uchar_pixel_size, channelSize,
         input_image_width, input_image_height,
-        strideSourceImage, strideResultImage);
+        uchar_strideSourceImage, uchar_strideResultImage);
+
+    channelSize = 1;
+    unsigned short max_val_ushort = 65535;
+    int ushort_strideSourceImage = input_image_width * ushort_pixel_size;
+    int ushort_strideResultImage = input_image_width * ushort_pixel_size;
+    InvertImageKernel<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1,
+        max_val_ushort, alphaChannelNum, ushort_pixel_size, channelSize,
+        input_image_width, input_image_height,
+        ushort_strideSourceImage, ushort_strideResultImage);
 
 
     //build_image_rotated_by_90_degrees_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, is_clockwise);
@@ -646,8 +655,8 @@ int main()
         cv::imshow("resized_image1_uchar", resized_image1_uchar);
         cv::imshow("resized_image2_uchar", resized_image2_uchar);
 
-        //cv::imshow("resized_image1_ushort", resized_image1_ushort);
-        //cv::imshow("resized_image2_ushort", resized_image2_ushort);
+        cv::imshow("resized_image1_ushort", resized_image1_ushort);
+        cv::imshow("resized_image2_ushort", resized_image2_ushort);
 
         //cv::imshow("image1_float", image1_float);
         //cv::imshow("image2_float", image2_float);
