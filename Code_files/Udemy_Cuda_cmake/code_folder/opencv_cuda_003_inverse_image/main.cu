@@ -8,7 +8,7 @@
 #include <cmath>
 
 #define USE_CUDA
-#define USE_X_DIMENSIONS_ONLY
+//#define USE_X_DIMENSIONS_ONLY
 
 
 #ifdef USE_CUDA
@@ -23,7 +23,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 #endif //USE_CUDA
 
-bool read_image_from_file = false;
+bool read_image_from_file = true;
 const int height = 3;
 const int width = 5;
 
