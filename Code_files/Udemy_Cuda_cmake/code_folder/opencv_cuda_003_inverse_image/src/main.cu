@@ -110,57 +110,57 @@ void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimensi
     print_pixels_2D(matrix_name, pixelData, dimension1, dimension2, pixel_type);
 }
 
-#ifdef USE_CUDA
-
-__device__ inline int PixelOffset1D(int x, int channel, int pixelSize, int channelSize)
-{
-    return  x * pixelSize + channel * channelSize;
-}
-
-__device__ inline int PixelOffset(int y, int x, int channel, int stride, int pixelSize, int channelSize)
-{
-    return y * stride + PixelOffset1D(x, channel, pixelSize, channelSize);
-}
-
-__device__  inline bool DecodeYXC(int* y, int* x, int* c, int widthImage, int heightImage)
-{
-    *y = (threadIdx.y) + (blockDim.y) * (blockIdx.y);
-    *x = (threadIdx.x) + (blockDim.x) * (blockIdx.x);
-    *c = (threadIdx.z);
-
-    return (*y >= 0 && *y < heightImage&&* x >= 0 && *x < widthImage);
-}
-
-template<class T> __device__  inline T* Pixel(void* buffer, int offset)
-{
-    return (T*)((unsigned char*)buffer + offset);
-}
-
-template<class T> __global__ void InvertImageKernel(unsigned char* inputData, unsigned char* outputData,
-    T white, int alphaChannelNum, int pixelSize, int channelSize,
-    int widthImage, int heightImage,
-    int strideSourceImage, int strideResultImage)
-{
-    int row = 0;
-    int column = 0;
-    int channel = 0;
-    if (!DecodeYXC(&row, &column, &channel, widthImage, heightImage))
-        return;
-
-    int indexDst = PixelOffset(row, column, channel, strideResultImage, pixelSize, channelSize);
-    int indexSrc = PixelOffset(row, column, channel, strideSourceImage, pixelSize, channelSize);
-
-    if (channel != alphaChannelNum) // Not alpha channel
-    {
-        *(Pixel<T>(outputData, indexDst)) = white - *(Pixel<T>(inputData, indexSrc)); // Inverse
-    }
-    else // Alpha Channel
-    {
-        *(Pixel<T>(outputData, indexDst)) = *(Pixel<T>(inputData, indexSrc)); // Copy 
-    }
-
-}
-#endif //USE_CUDA
+//#ifdef USE_CUDA
+//
+//__device__ inline int PixelOffset1D(int x, int channel, int pixelSize, int channelSize)
+//{
+//    return  x * pixelSize + channel * channelSize;
+//}
+//
+//__device__ inline int PixelOffset(int y, int x, int channel, int stride, int pixelSize, int channelSize)
+//{
+//    return y * stride + PixelOffset1D(x, channel, pixelSize, channelSize);
+//}
+//
+//__device__  inline bool DecodeYXC(int* y, int* x, int* c, int widthImage, int heightImage)
+//{
+//    *y = (threadIdx.y) + (blockDim.y) * (blockIdx.y);
+//    *x = (threadIdx.x) + (blockDim.x) * (blockIdx.x);
+//    *c = (threadIdx.z);
+//
+//    return (*y >= 0 && *y < heightImage&&* x >= 0 && *x < widthImage);
+//}
+//
+//template<class T> __device__  inline T* Pixel(void* buffer, int offset)
+//{
+//    return (T*)((unsigned char*)buffer + offset);
+//}
+//
+//template<class T> __global__ void InvertImageKernel(unsigned char* inputData, unsigned char* outputData,
+//    T white, int alphaChannelNum, int pixelSize, int channelSize,
+//    int widthImage, int heightImage,
+//    int strideSourceImage, int strideResultImage)
+//{
+//    int row = 0;
+//    int column = 0;
+//    int channel = 0;
+//    if (!DecodeYXC(&row, &column, &channel, widthImage, heightImage))
+//        return;
+//
+//    int indexDst = PixelOffset(row, column, channel, strideResultImage, pixelSize, channelSize);
+//    int indexSrc = PixelOffset(row, column, channel, strideSourceImage, pixelSize, channelSize);
+//
+//    if (channel != alphaChannelNum) // Not alpha channel
+//    {
+//        *(Pixel<T>(outputData, indexDst)) = white - *(Pixel<T>(inputData, indexSrc)); // Inverse
+//    }
+//    else // Alpha Channel
+//    {
+//        *(Pixel<T>(outputData, indexDst)) = *(Pixel<T>(inputData, indexSrc)); // Copy 
+//    }
+//
+//}
+//#endif //USE_CUDA
 
 template <class T>
 void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, int pixel_size, int direction_of_rotation)
@@ -589,29 +589,43 @@ int main()
 
     unsigned char max_val_uchar = 255;
     int alphaChannelNum = -1;
-    int channelSize = 1;
+    int uchar_channelSize = 1;
     int input_image_width = image1_uchar.cols;
     int input_image_height = image1_uchar.rows;
     int uchar_strideSourceImage = input_image_width * uchar_pixel_size;
     int uchar_strideResultImage = input_image_width * uchar_pixel_size;
-    
-    InvertImageKernel<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1,
-        max_val_uchar, alphaChannelNum, uchar_pixel_size, channelSize,
-        input_image_width, input_image_height,
-        uchar_strideSourceImage, uchar_strideResultImage);
+    int uchar_subPixelType = 1;
+    //
+    //InvertImageKernel<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1,
+    //    max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
+    //    input_image_width, input_image_height,
+    //    uchar_strideSourceImage, uchar_strideResultImage);
 
-    channelSize = 2;
+    int ushort_subPixelType = 2;
+    int ushort_channelSize = 2;
     unsigned short max_val_ushort = 65535;
     int ushort_strideSourceImage = input_image_width * ushort_pixel_size;
     int ushort_strideResultImage = input_image_width * ushort_pixel_size;
-    InvertImageKernel<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2,
-        max_val_ushort, alphaChannelNum, ushort_pixel_size, channelSize,
-        input_image_width, input_image_height,
-        ushort_strideSourceImage, ushort_strideResultImage);
+    //InvertImageKernel<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2,
+    //    max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
+    //    input_image_width, input_image_height,
+    //    ushort_strideSourceImage, ushort_strideResultImage);
 
 
-    //build_image_rotated_by_90_degrees_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, is_clockwise);
-    //build_image_rotated_by_90_degrees_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size, is_clockwise);
+    __wchar_t* Inverse_status1 = Inverse(device_inputData1, device_outputData1,
+        uchar_subPixelType, max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
+        input_image_width, input_image_height, uchar_strideSourceImage, uchar_strideResultImage,
+        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
+        blocksPerGrid.x, blocksPerGrid.y);
+
+    __wchar_t* Inverse_status2 = Inverse(device_inputData2, device_outputData2,
+        ushort_subPixelType, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
+        input_image_width, input_image_height, ushort_strideSourceImage, ushort_strideResultImage,
+        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
+        blocksPerGrid.x, blocksPerGrid.y);
+
+
+
     cudaEventRecord(stop);
 
     cudaEventSynchronize(stop);
