@@ -440,7 +440,7 @@ cv::Mat calc_resized_image(cv::Mat image, double scale_factor)
 int main()
 {
     //going back from this folder: ./build/code_folder/Section3.3_spotlights/
-    std::string image_path = "../../../../../images/balloons.jpg";
+    std::string image_path = "../../../images/balloons.jpg";
     cv::Mat image1_uchar;
     cv::Mat image1_ushort;
     cv::Mat image1_float;

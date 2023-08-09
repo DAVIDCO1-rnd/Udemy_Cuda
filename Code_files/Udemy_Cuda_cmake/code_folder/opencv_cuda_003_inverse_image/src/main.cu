@@ -94,7 +94,6 @@ public:
     }
 };
 
-//c++ code:
 BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width, int height)
 {
     cudaDeviceProp  prop;
@@ -146,65 +145,7 @@ BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width,
 
     BlockAndGridDimensions* block_and_grid_dimensions = new BlockAndGridDimensions(blockSize, gridSize);
     return block_and_grid_dimensions;
-
-    //return new BlockAndGridDimensions(
-    //    blockSize,
-    //    gridSize
-    //);
 }
-
-//c# code:
-//public static BlockAndGridDimensions CalculateBlockAndGridDimensions(int channels, int width, int height)
-//{
-//
-//    var maxBlockSize = DeviceProperties.deviceThreadsPerBlock / 2;
-//
-//
-//    var blockSize = new int[3];
-//    var gridSize = new int[2];
-//
-//    // Calculate optimal block size, depends on the number of channels in picture
-//    if (width * height * channels < maxBlockSize)
-//    {
-//        blockSize[0] = width;
-//        blockSize[1] = height;
-//    }
-//    else
-//    {
-//        var dWarp = DeviceProperties.deviceWarpSize / (float)channels;
-//        var maxSize = (int)(maxBlockSize / (float)channels);
-//
-//        if (width <= maxSize)
-//            blockSize[0] = width;
-//        else
-//        {
-//            var threadsX = 0.0f;
-//            while (threadsX < maxSize)
-//            {
-//                threadsX += dWarp;
-//
-//            }
-//            blockSize[0] = (int)threadsX;
-//        }
-//        blockSize[1] = maxSize / blockSize[0];
-//        if (blockSize[1] == 0)
-//        {
-//            blockSize[1] = 1;
-//        }
-//    }
-//
-//    //block size 3rd dimension is always the number of channels.
-//    blockSize[2] = channels;
-//
-//    //calculate grid size. (number of necessary blocks to cover the whole picture) 
-//    gridSize[0] = (int)Math.Ceiling((double)width / blockSize[0]);
-//    gridSize[1] = (int)Math.Ceiling((double)height / blockSize[1]);
-//
-//    return new BlockAndGridDimensions(
-//        blockSize,
-//        gridSize
-//    );
-//}
 #endif //USE_CUDA
 
 cv::Mat calc_resized_image(cv::Mat image, double scale_factor)
@@ -231,7 +172,7 @@ int main()
 
 
     //going back from this folder: ./build/code_folder/Section3.3_spotlights/
-    std::string image_path = "../../../../../images/balloons.jpg";
+    std::string image_path = "../../../images/balloons.jpg";
     cv::Mat image1_uchar;
     cv::Mat image1_ushort;
     cv::Mat image1_float;
