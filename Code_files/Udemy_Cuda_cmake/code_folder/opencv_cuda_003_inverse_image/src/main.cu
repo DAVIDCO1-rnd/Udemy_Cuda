@@ -8,6 +8,7 @@
 #include <cmath>
 
 #include "Inverse.cuh"
+#include "utils_custom_matrices.h"
 
 #define USE_CUDA
 //#define USE_X_DIMENSIONS_ONLY
@@ -25,7 +26,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 #endif //USE_CUDA
 
-bool read_image_from_file = true;
+bool read_image_from_file = false;
 const int height = 3;
 const int width = 5;
 
@@ -38,181 +39,6 @@ enum class ThreadsAndBlocksCalculations {
 
 
 
-
-
-enum class DirectionOfRotation {
-    Clockwise = 0,
-    CounterClockwise = 1
-};
-
-enum class PixelType {
-    UCHAR = 1,
-    USHORT = 2,
-    FLOAT = 4
-};
-
-void print_single_val(unsigned char* pixelData, int i, PixelType pixel_type)
-{
-    if (pixel_type == PixelType::UCHAR)
-    {
-        unsigned char current_val = pixelData[i];
-        printf("0x%02x, ", current_val);
-    }
-    if (pixel_type == PixelType::USHORT)
-    {
-        unsigned char sub_pixel1 = pixelData[i + 0];
-        unsigned char sub_pixel2 = pixelData[i + 1];
-        unsigned short current_val = 0x100 * sub_pixel2 + sub_pixel1;
-        printf("0x%04x, ", current_val);
-    }
-    if (pixel_type == PixelType::FLOAT)
-    {
-        unsigned char sub_pixel1 = pixelData[i + 0];
-        unsigned char sub_pixel2 = pixelData[i + 1];
-        unsigned char sub_pixel3 = pixelData[i + 2];
-        unsigned char sub_pixel4 = pixelData[i + 3];
-        float current_val = 4.0 * sub_pixel4 + 3.0 * sub_pixel3 + 2.0 * sub_pixel2 + 1.0 * sub_pixel1;
-        printf("%f, ", current_val);
-    }
-}
-
-
-void print_pixels_1D(std::string matrix_name, unsigned char* pixelData, int dimension1, int dimension2, PixelType pixel_type)
-{
-    int pixel_size = (int)pixel_type;
-    printf("%s as 1D array\n", matrix_name.c_str());
-    for (int i = 0; i < pixel_size * dimension1 * dimension2; i += pixel_size)
-    {
-        print_single_val(pixelData, i, pixel_type);
-    }
-    printf("\n\n");
-}
-
-void print_pixels_2D(std::string matrix_name, unsigned char* pixelData, int dimension1, int dimension2, PixelType pixel_type)
-{
-    int pixel_size = (int)pixel_type;
-    printf("%s as 2D array\n", matrix_name.c_str());
-    for (int i = 0; i < dimension1; i++)
-    {
-        for (int j = 0; j < pixel_size * dimension2; j += pixel_size)
-        {
-            int current_index = i * pixel_size * dimension2 + j;
-            print_single_val(pixelData, current_index, pixel_type);
-        }
-        printf("\n");
-    }
-    printf("\n\n");
-}
-
-void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimension1, int dimension2, PixelType pixel_type)
-{
-    print_pixels_1D(matrix_name, pixelData, dimension1, dimension2, pixel_type);
-    print_pixels_2D(matrix_name, pixelData, dimension1, dimension2, pixel_type);
-}
-
-//#ifdef USE_CUDA
-//
-//__device__ inline int PixelOffset1D(int x, int channel, int pixelSize, int channelSize)
-//{
-//    return  x * pixelSize + channel * channelSize;
-//}
-//
-//__device__ inline int PixelOffset(int y, int x, int channel, int stride, int pixelSize, int channelSize)
-//{
-//    return y * stride + PixelOffset1D(x, channel, pixelSize, channelSize);
-//}
-//
-//__device__  inline bool DecodeYXC(int* y, int* x, int* c, int widthImage, int heightImage)
-//{
-//    *y = (threadIdx.y) + (blockDim.y) * (blockIdx.y);
-//    *x = (threadIdx.x) + (blockDim.x) * (blockIdx.x);
-//    *c = (threadIdx.z);
-//
-//    return (*y >= 0 && *y < heightImage&&* x >= 0 && *x < widthImage);
-//}
-//
-//template<class T> __device__  inline T* Pixel(void* buffer, int offset)
-//{
-//    return (T*)((unsigned char*)buffer + offset);
-//}
-//
-//template<class T> __global__ void InvertImageKernel(unsigned char* inputData, unsigned char* outputData,
-//    T white, int alphaChannelNum, int pixelSize, int channelSize,
-//    int widthImage, int heightImage,
-//    int strideSourceImage, int strideResultImage)
-//{
-//    int row = 0;
-//    int column = 0;
-//    int channel = 0;
-//    if (!DecodeYXC(&row, &column, &channel, widthImage, heightImage))
-//        return;
-//
-//    int indexDst = PixelOffset(row, column, channel, strideResultImage, pixelSize, channelSize);
-//    int indexSrc = PixelOffset(row, column, channel, strideSourceImage, pixelSize, channelSize);
-//
-//    if (channel != alphaChannelNum) // Not alpha channel
-//    {
-//        *(Pixel<T>(outputData, indexDst)) = white - *(Pixel<T>(inputData, indexSrc)); // Inverse
-//    }
-//    else // Alpha Channel
-//    {
-//        *(Pixel<T>(outputData, indexDst)) = *(Pixel<T>(inputData, indexSrc)); // Copy 
-//    }
-//
-//}
-//#endif //USE_CUDA
-
-template <class T>
-void build_image_rotated_by_90_degrees_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, int pixel_size, int direction_of_rotation)
-{
-    int output_width = input_height;
-    int output_height = input_width;
-
-    int i = 0;
-    while (i < input_width)
-    {
-        int j = 0;
-        while (j < input_height)
-        {
-            int current_index_input_data = pixel_size * (i * input_height + j);
-            int current_index_output_data;
-
-            if (direction_of_rotation == 0) //Clockwise
-            {
-                current_index_output_data = pixel_size * ((input_height - j - 1) * input_width + i);
-            }
-            else //CounterClockwise
-            {
-                current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i);
-            }
-            T pixel_value = *(T*)(inputData + current_index_output_data);
-            *((T*)(outputData + current_index_input_data)) = pixel_value;
-
-            if (read_image_from_file == false)
-            {
-                printf("%d, ", current_index_output_data);
-            }
-            j++;
-        }
-        if (read_image_from_file == false)
-        {
-            printf("\n");
-        }
-        i++;
-    }
-
-    if (read_image_from_file == false)
-    {
-        printf("\n\n");
-        printf("build_transposed_image_cpu\n");
-        for (int i = 0; i < input_width * input_height; i++)
-        {
-            unsigned char current_val = outputData[i];
-            printf("%d.  %d\n", i, current_val);
-        }
-        printf("\n\n");
-    }
-}
 
 cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
 {
@@ -255,6 +81,7 @@ cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
     }
     return image;
 }
+
 
 #ifdef USE_CUDA
 class BlockAndGridDimensions {
@@ -430,12 +257,6 @@ int main()
 
     if (read_image_from_file == false)
     {
-        //uchar image_data[height][width] = {
-        //   {0x05, 0x10, 0x15, 0x20, 0x25, 0x30},
-        //   {0x35, 0x40, 0x45, 0x50, 0x55, 0x60},
-        //   {0x65, 0x70, 0x75, 0x80, 0x85, 0x90}
-        //};
-
         uchar image_data[height][width] = {
            {0x00, 0x01, 0x02, 0x03, 0x04},
            {0x05, 0x06, 0x07, 0x08, 0x09},
@@ -457,16 +278,6 @@ int main()
     cv::Mat image2_ushort(image1_ushort.rows, image1_ushort.cols, CV_16UC1);
     cv::Mat image2_float(image1_float.rows, image1_float.cols, CV_32FC1);
 
-
-
-    DirectionOfRotation direction_of_rotation = DirectionOfRotation::Clockwise;
-#ifndef USE_CUDA
-    build_image_rotated_by_90_degrees_cpu<unsigned char>(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, (int)PixelType::UCHAR, (int)direction_of_rotation);
-
-    build_image_rotated_by_90_degrees_cpu<unsigned short>(image1_ushort.data, image2_ushort.data, image1_ushort.cols, image1_ushort.rows, (int)PixelType::USHORT, (int)direction_of_rotation);
-
-    build_image_rotated_by_90_degrees_cpu<float>(image1_float.data, image2_float.data, image1_float.cols, image1_float.rows, (int)PixelType::FLOAT, (int)direction_of_rotation);
-#endif
 
 #ifdef USE_CUDA
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -577,9 +388,6 @@ int main()
         threadsPerBlock = dim3(num_of_threads_x, num_of_threads_y);
     }
 #endif  //USE_X_DIMENSIONS_ONLY
-
-
-    int is_clockwise = 1;
 
     cudaEvent_t start, stop;
     cudaEventCreate(&start);
@@ -699,57 +507,3 @@ int main()
 
     return 0;
 }
-
-
-
-
-//#include <iostream>
-//#include <opencv2/core.hpp>
-//#include <opencv2/imgcodecs.hpp>
-//#include <opencv2/highgui.hpp>
-//#include <cuda_runtime.h>
-//
-//// CUDA kernel code
-//__global__ void multiply_by_constant(float* input, float constant, int size)
-//{
-//    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-//    if (idx < size)
-//    {
-//        input[idx] *= constant;
-//    }
-//}
-//
-//int main()
-//{
-//    // Create a sample buffer array in C++
-//    int size = 9;
-//    float input_buffer[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
-//
-//    // Allocate memory on the GPU
-//    float* d_input_buffer;
-//    cudaMalloc((void**)&d_input_buffer, size * sizeof(float));
-//
-//    // Copy the input buffer from the CPU to the GPU
-//    cudaMemcpy(d_input_buffer, input_buffer, size * sizeof(float), cudaMemcpyHostToDevice);
-//
-//    // Define the block and grid dimensions for CUDA execution
-//    int block_size = 256;
-//    int num_blocks = (size + block_size - 1) / block_size;
-//
-//    // Execute the CUDA kernel
-//    multiply_by_constant<<<num_blocks, block_size>>>(d_input_buffer, 2.0f, size);
-//
-//    // Copy the result back from the GPU to the CPU
-//    float output_buffer[size];
-//    cudaMemcpy(output_buffer, d_input_buffer, size * sizeof(float), cudaMemcpyDeviceToHost);
-//
-//    // Clean up memory on the GPU
-//    cudaFree(d_input_buffer);
-//
-//    // Show the result using OpenCV (just as an example)
-//    cv::Mat result = cv::Mat(1, size, CV_32F, output_buffer);
-//    std::cout << "Input Buffer: " << cv::Mat(1, size, CV_32F, input_buffer) << std::endl;
-//    std::cout << "Output Buffer: " << result << std::endl;
-//
-//    return 0;
-//}
