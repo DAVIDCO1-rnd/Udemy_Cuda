@@ -23,7 +23,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 #endif //USE_CUDA
 
-bool read_image_from_file = false;
+bool read_image_from_file = true;
 const int height = 3;
 const int width = 5;
 
@@ -402,7 +402,7 @@ int main()
 
 
     //going back from this folder: ./build/code_folder/Section3.3_spotlights/
-    std::string image_path = "../../../code_folder/opencv_cuda/images/balloons.jpg";
+    std::string image_path = "../../../../../images/balloons.jpg";
     cv::Mat image1_uchar;
     cv::Mat image1_ushort;
     cv::Mat image1_float;
@@ -412,6 +412,10 @@ int main()
         cv::cvtColor(rgb_image1, image1_uchar, cv::COLOR_BGR2GRAY);
         cv::vconcat(image1_uchar, image1_uchar, image1_uchar);
         cv::hconcat(image1_uchar, image1_uchar, image1_uchar);
+        //int newWidth = 2048;
+        //int newHeight = 2560;
+        //cv::resize(rgb_image1, rgb_image1, cv::Size(newWidth, newHeight), cv::INTER_LINEAR);
+        //cv::imwrite(image_path, rgb_image1);
         if (image1_uchar.empty())
         {
             std::cout << "Could not read the image: " << image_path << std::endl;
@@ -594,11 +598,11 @@ int main()
         input_image_width, input_image_height,
         uchar_strideSourceImage, uchar_strideResultImage);
 
-    channelSize = 1;
+    channelSize = 2;
     unsigned short max_val_ushort = 65535;
     int ushort_strideSourceImage = input_image_width * ushort_pixel_size;
     int ushort_strideResultImage = input_image_width * ushort_pixel_size;
-    InvertImageKernel<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1,
+    InvertImageKernel<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2,
         max_val_ushort, alphaChannelNum, ushort_pixel_size, channelSize,
         input_image_width, input_image_height,
         ushort_strideSourceImage, ushort_strideResultImage);
