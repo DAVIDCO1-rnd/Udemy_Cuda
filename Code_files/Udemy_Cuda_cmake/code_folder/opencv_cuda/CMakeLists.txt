@@ -1,7 +1,7 @@
 get_filename_component(target_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 set(includes_folder "${CMAKE_CURRENT_SOURCE_DIR}/include")
-set(sources_folder "${CMAKE_CURRENT_SOURCE_DIR}")
-file(GLOB HEADERS_FILES "${includes_folder}/*.h" "${includes_folder}/*.hpp" "${includes_folder}/*.hh")
+set(sources_folder "${CMAKE_CURRENT_SOURCE_DIR}/src")
+file(GLOB HEADERS_FILES "${includes_folder}/*.h" "${includes_folder}/*.hpp" "${includes_folder}/*.hh" "${includes_folder}/*.cuh")
 file(GLOB SOURCES_FILES "${sources_folder}/*.cpp" "${sources_folder}/*.c" "${sources_folder}/*.cu")
 
 set(OpenCV_main_folder "../../../../opencv_4.3.0")

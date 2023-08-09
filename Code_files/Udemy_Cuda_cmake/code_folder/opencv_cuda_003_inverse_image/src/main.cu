@@ -7,6 +7,8 @@
 #include <stdio.h>
 #include <cmath>
 
+#include "Inverse.cuh"
+
 #define USE_CUDA
 //#define USE_X_DIMENSIONS_ONLY
 

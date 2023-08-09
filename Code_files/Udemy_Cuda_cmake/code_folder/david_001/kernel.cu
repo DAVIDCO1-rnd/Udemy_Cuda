@@ -14,6 +14,20 @@ __global__ void addKernel(int *c, const int *a, const int *b)
 
 int main()
 {
+    //cudaError err = cudaGetLastError();
+    //if (err != 0)
+    //    return -1;
+    //int activeDeviceNumber;
+    //err = cudaGetDevice(&activeDeviceNumber);
+    //if (err != 0)
+    //    return -1;
+    //int deviceMultiProcessorsCnt;
+    //CUresult res = cuDeviceGetAttribute(&deviceMultiProcessorsCnt, CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT, activeDeviceNumber);
+    //if (res != 0)
+    //    return -1;
+
+
+
     const int arraySize = 5;
     const int a[arraySize] = { 1, 2, 3, 4, 5 };
     const int b[arraySize] = { 10, 20, 30, 40, 50 };

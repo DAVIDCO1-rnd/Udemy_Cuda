@@ -1,7 +1,7 @@
 get_filename_component(target_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
 set(includes_folder "${CMAKE_CURRENT_SOURCE_DIR}/include")
-set(sources_folder "${CMAKE_CURRENT_SOURCE_DIR}")
-file(GLOB HEADERS_FILES "${includes_folder}/*.h" "${includes_folder}/*.hpp" "${includes_folder}/*.hh")
+set(sources_folder "${CMAKE_CURRENT_SOURCE_DIR}/src")
+file(GLOB HEADERS_FILES "${includes_folder}/*.h" "${includes_folder}/*.hpp" "${includes_folder}/*.hh" "${includes_folder}/*.cuh" "${CUDA_UTILS_FOLDERS}/*.cu" "${CUDA_UTILS_FOLDERS}/*.cuh")
 file(GLOB SOURCES_FILES "${sources_folder}/*.cpp" "${sources_folder}/*.c" "${sources_folder}/*.cu")
 
 set(OpenCV_main_folder "../../../../opencv_4.3.0")
@@ -26,7 +26,7 @@ set_target_properties(${target_name} PROPERTIES
 if(VIPER_ENABLE_CUDA_PROFILER)
 	target_compile_definitions(${target_name} PRIVATE ENABLE_CUDA_PROFILER=1)
 endif()
-target_include_directories(${target_name} PUBLIC ${includes_folder} ${OpenCV_INCLUDE_Folder})
+target_include_directories(${target_name} PUBLIC ${includes_folder} ${OpenCV_INCLUDE_Folder} ${CUDA_UTILS_FOLDERS})
 target_compile_features(${target_name} PUBLIC cxx_std_17)
 
 add_custom_command(TARGET ${target_name} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy "${OpenCV_DLL_Folder}/opencv_world430d.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
