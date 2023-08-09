@@ -653,8 +653,8 @@ int main()
         cv::imshow("resized_image1_uchar", resized_image1_uchar);
         cv::imshow("resized_image2_uchar", resized_image2_uchar);
 
-        //cv::imshow("resized_image1_ushort", resized_image1_ushort);
-        //cv::imshow("resized_image2_ushort", resized_image2_ushort);
+        cv::imshow("resized_image1_ushort", resized_image1_ushort);
+        cv::imshow("resized_image2_ushort", resized_image2_ushort);
 
         //cv::imshow("image1_float", image1_float);
         //cv::imshow("image2_float", image2_float);

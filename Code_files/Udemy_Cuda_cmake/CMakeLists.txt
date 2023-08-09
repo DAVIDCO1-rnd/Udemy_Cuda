@@ -28,6 +28,23 @@ endif()
 set(CUDA_BINARY_DIR_OUTPUT ${CMAKE_BINARY_DIR}/bin/${VIPER_ARCH}/$<CONFIG>)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CUDA_BINARY_DIR_OUTPUT})
 
+set(OpenCV_main_folder "${CMAKE_CURRENT_SOURCE_DIR}/opencv_4.3.0")
+set(OpenCV_INCLUDE_Folder "${OpenCV_main_folder}/build/include")
+set(OpenCV_LIBS_Folder "${OpenCV_main_folder}/build/x64/vc15/lib")
+set(OpenCV_DLL_Folder "${OpenCV_main_folder}/build/x64/vc15/bin")
+
+set(opencv_world430_lib_path_debug "${OpenCV_LIBS_Folder}/opencv_world430d.lib")
+set(opencv_world430_lib_path_release "${OpenCV_LIBS_Folder}/opencv_world430.lib")
+
+set(opencv_world430_dll_path_debug "${OpenCV_DLL_Folder}/opencv_world430d.dll")
+set(opencv_world430_dll_path_release "${OpenCV_DLL_Folder}/opencv_world430.dll")
+
+set(opencv_videoio_ffmpeg430_dll_path "${OpenCV_DLL_Folder}/opencv_videoio_ffmpeg430_64.dll")
+
+
+
+
+message(STATUS "OpenCV_main_folder = ${OpenCV_main_folder}")
 
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 message(STATUS "CUDA_BINARY_DIR_OUTPUT = ${CUDA_BINARY_DIR_OUTPUT}")
