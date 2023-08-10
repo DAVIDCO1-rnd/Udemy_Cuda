@@ -17,15 +17,15 @@ template<class T> void InvertImageKernel_cpu(unsigned char* inputData, unsigned 
 	int block_Dim_x = blockSizeX;
 	int block_Dim_y = blockSizeY;
 
-	for (int thread_Idx_x; thread_Idx_x < blockSizeX; thread_Idx_x++)
+	for (int thread_Idx_y = 0; thread_Idx_y < blockSizeY; thread_Idx_y++)
 	{
-		for (int thread_Idx_y; thread_Idx_y < blockSizeY; thread_Idx_y++)
+		for (int thread_Idx_x = 0; thread_Idx_x < blockSizeX; thread_Idx_x++)
 		{
-			for (int thread_Idx_z; thread_Idx_z < blockSizeZ; thread_Idx_z++)
+			for (int thread_Idx_z = 0; thread_Idx_z < blockSizeZ; thread_Idx_z++)
 			{
-				for (int block_Idx_x; block_Idx_x < gridSizeX; block_Idx_x++)
+				for (int block_Idx_x = 0; block_Idx_x < gridSizeX; block_Idx_x++)
 				{
-					for (int block_Idx_y; block_Idx_y < gridSizeY; block_Idx_y++)
+					for (int block_Idx_y = 0; block_Idx_y < gridSizeY; block_Idx_y++)
 					{
 						int row = 0;
 						int column = 0;
@@ -36,13 +36,15 @@ template<class T> void InvertImageKernel_cpu(unsigned char* inputData, unsigned 
 						int indexDst = PixelOffset_cpu(row, column, channel, strideResultImage, pixelSize, channelSize);
 						int indexSrc = PixelOffset_cpu(row, column, channel, strideSourceImage, pixelSize, channelSize);
 
+						T current_val = *(Pixel_cpu<T>(inputData, indexSrc));
 						if (channel != alphaChannelNum) // Not alpha channel
-						{
-							*(Pixel_cpu<T>(outputData, indexDst)) = white - *(Pixel_cpu<T>(inputData, indexSrc)); // Inverse
+						{	
+							T new_val = white - current_val;
+							*(Pixel_cpu<T>(outputData, indexDst)) = new_val; // Inverse
 						}
 						else // Alpha Channel
 						{
-							*(Pixel_cpu<T>(outputData, indexDst)) = *(Pixel_cpu<T>(inputData, indexSrc)); // Copy 
+							*(Pixel_cpu<T>(outputData, indexDst)) = current_val; // Copy 
 						}
 					}
 				}

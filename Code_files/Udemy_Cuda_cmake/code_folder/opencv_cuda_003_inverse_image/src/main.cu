@@ -4,13 +4,17 @@
 #include <cmath>
 
 #include "Inverse.cuh"
+#include "Inverse_cpu.cuh"
 #include "utils_custom_matrices.h"
+
+
+
 
 //#define USE_CUDA
 //#define USE_X_DIMENSIONS_ONLY
 
 
-#ifdef USE_CUDA
+
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
 static void HandleError(cudaError_t err, const char* file, int line) {
@@ -20,7 +24,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
     }
 }
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
-#endif //USE_CUDA
+
 
 bool read_image_from_file = true;
 
@@ -38,7 +42,7 @@ enum class ThreadsAndBlocksCalculations {
 
 
 
-#ifdef USE_CUDA
+
 class BlockAndGridDimensions {
 public:
     dim3 blocksPerGrid;
@@ -101,7 +105,7 @@ BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width,
     BlockAndGridDimensions* block_and_grid_dimensions = new BlockAndGridDimensions(blockSize, gridSize);
     return block_and_grid_dimensions;
 }
-#endif //USE_CUDA
+
 
 cv::Mat calc_resized_image(cv::Mat image, double scale_factor)
 {
@@ -175,6 +179,31 @@ int main()
     cv::Mat image2_float(image1_float.rows, image1_float.cols, CV_32FC1);
 
 
+    unsigned char max_val_uchar = 255;
+    int alphaChannelNum = -1;
+    int uchar_channelSize = 1;
+    int input_image_width = image1_uchar.cols;
+    int input_image_height = image1_uchar.rows;
+    int uchar_pixel_size = (int)PixelType::UCHAR;
+    int uchar_strideSourceImage = input_image_width * uchar_pixel_size;
+    int uchar_strideResultImage = input_image_width * uchar_pixel_size;
+    int uchar_subPixelType = 1;
+
+
+    unsigned short max_val_ushort = 65535;
+    int ushort_subPixelType = 2;
+    int ushort_channelSize = 2;    
+    int ushort_pixel_size = (int)PixelType::USHORT;
+    int ushort_strideSourceImage = input_image_width * ushort_pixel_size;
+    int ushort_strideResultImage = input_image_width * ushort_pixel_size;
+
+    int image_height = image1_uchar.rows;
+    int image_width = image1_uchar.cols;
+    int num_of_channels = 1;
+    BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
+
+    dim3 blocksPerGrid;
+    dim3 threadsPerBlock;
 #ifdef USE_CUDA
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -233,7 +262,7 @@ int main()
     int* device_uchar_pixel_size = NULL;
     size_t device_uchar_pixel_size_bytes = sizeof(int);
     HANDLE_ERROR(cudaMalloc((void**)&device_uchar_pixel_size, device_uchar_pixel_size_bytes));
-    int uchar_pixel_size = (int)PixelType::UCHAR;
+    
     HANDLE_ERROR(cudaMemcpy(device_uchar_pixel_size, &(uchar_pixel_size), device_uchar_pixel_size_bytes, cudaMemcpyHostToDevice));
 
     //create device_ushort_pixel_size
@@ -241,12 +270,10 @@ int main()
     size_t device_ushort_pixel_size_bytes = sizeof(int);
     HANDLE_ERROR(cudaMalloc((void**)&device_ushort_pixel_size, device_ushort_pixel_size_bytes));
 
-    int ushort_pixel_size = (int)PixelType::USHORT;
+    
     HANDLE_ERROR(cudaMemcpy(device_ushort_pixel_size, &(ushort_pixel_size), device_ushort_pixel_size_bytes, cudaMemcpyHostToDevice));
 
-    int image_height = image1_uchar.rows;
-    int image_width = image1_uchar.cols;
-    int num_of_channels = 1;
+
 
     //int blocksPerGrid = 256;    //dridDim is two-dimensional
     //int threadsPerBlock = 256;  //blockDim is three-dimensional
@@ -265,16 +292,12 @@ int main()
     int num_of_blocks_x = (image_width + num_of_threads_x - 1) / num_of_threads_x;
     int num_of_blocks_y = (image_height + num_of_threads_y - 1) / num_of_threads_y;
 
-    dim3 blocksPerGrid;
-    dim3 threadsPerBlock;
-
 #ifdef USE_X_DIMENSIONS_ONLY
     blocksPerGrid = dim3(256, 1, 1);
     threadsPerBlock = dim3(256, 1, 1);
 #else //USE_X_DIMENSIONS_ONLY
     if (threads_and_blocks_calculations == ThreadsAndBlocksCalculations::Use_optimal_function)
-    {
-        BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
+    {        
         blocksPerGrid = block_and_grid_dims->blocksPerGrid;
         threadsPerBlock = block_and_grid_dims->threadsPerBlock;
     }
@@ -291,25 +314,25 @@ int main()
     cudaEventRecord(start);
 
 
-    unsigned char max_val_uchar = 255;
-    int alphaChannelNum = -1;
-    int uchar_channelSize = 1;
-    int input_image_width = image1_uchar.cols;
-    int input_image_height = image1_uchar.rows;
-    int uchar_strideSourceImage = input_image_width * uchar_pixel_size;
-    int uchar_strideResultImage = input_image_width * uchar_pixel_size;
-    int uchar_subPixelType = 1;
+    //unsigned char max_val_uchar = 255;
+    //int alphaChannelNum = -1;
+    //int uchar_channelSize = 1;
+    //int input_image_width = image1_uchar.cols;
+    //int input_image_height = image1_uchar.rows;
+    //int uchar_strideSourceImage = input_image_width * uchar_pixel_size;
+    //int uchar_strideResultImage = input_image_width * uchar_pixel_size;
+    //int uchar_subPixelType = 1;
     //
     //InvertImageKernel<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1,
     //    max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
     //    input_image_width, input_image_height,
     //    uchar_strideSourceImage, uchar_strideResultImage);
 
-    int ushort_subPixelType = 2;
-    int ushort_channelSize = 2;
-    unsigned short max_val_ushort = 65535;
-    int ushort_strideSourceImage = input_image_width * ushort_pixel_size;
-    int ushort_strideResultImage = input_image_width * ushort_pixel_size;
+    //int ushort_subPixelType = 2;
+    //int ushort_channelSize = 2;
+    //unsigned short max_val_ushort = 65535;
+    //int ushort_strideSourceImage = input_image_width * ushort_pixel_size;
+    //int ushort_strideResultImage = input_image_width * ushort_pixel_size;
     //InvertImageKernel<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2,
     //    max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
     //    input_image_width, input_image_height,
@@ -365,6 +388,30 @@ int main()
     HANDLE_ERROR(cudaFree(device_uchar_pixel_size));
     HANDLE_ERROR(cudaFree(device_ushort_pixel_size));
 
+#else //USE_CUDA
+    unsigned char* device_outputData2 = NULL;
+    unsigned int host_outputData_num_of_elements = image1_uchar.rows * image1_uchar.cols;
+    size_t host_outputData_num_of_bytes1 = host_outputData_num_of_elements * sizeof(unsigned char);
+    unsigned char* host_outputData1 = (unsigned char*)(malloc(host_outputData_num_of_bytes1));
+    blocksPerGrid = block_and_grid_dims->blocksPerGrid;
+    threadsPerBlock = block_and_grid_dims->threadsPerBlock;
+
+    __wchar_t* Inverse_status1 = Inverse_cpu(image1_uchar.data, host_outputData1,
+        uchar_subPixelType, max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
+        input_image_width, input_image_height, uchar_strideSourceImage, uchar_strideResultImage,
+        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
+        blocksPerGrid.x, blocksPerGrid.y);
+    image2_uchar.data = host_outputData1;
+
+
+    size_t host_outputData_num_of_bytes2 = host_outputData_num_of_elements * sizeof(unsigned short);
+    unsigned char* host_outputData2 = (unsigned char*)(malloc(host_outputData_num_of_bytes2));
+    __wchar_t* Inverse_status2 = Inverse_cpu(image1_ushort.data, host_outputData2,
+        ushort_subPixelType, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
+        input_image_width, input_image_height, ushort_strideSourceImage, ushort_strideResultImage,
+        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
+        blocksPerGrid.x, blocksPerGrid.y);
+    image2_ushort.data = host_outputData2;
 #endif //USE_CUDA
 
 
