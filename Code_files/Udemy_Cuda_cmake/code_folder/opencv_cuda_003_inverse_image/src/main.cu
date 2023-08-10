@@ -1,7 +1,3 @@
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/opencv.hpp>
 #include <string>
 #include <iostream>
 #include <stdio.h>
@@ -10,7 +6,7 @@
 #include "Inverse.cuh"
 #include "utils_custom_matrices.h"
 
-#define USE_CUDA
+//#define USE_CUDA
 //#define USE_X_DIMENSIONS_ONLY
 
 
@@ -26,9 +22,8 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 #endif //USE_CUDA
 
-bool read_image_from_file = false;
-const int height = 3;
-const int width = 5;
+bool read_image_from_file = true;
+
 
 #ifndef USE_X_DIMENSIONS_ONLY
 enum class ThreadsAndBlocksCalculations {
@@ -40,47 +35,7 @@ enum class ThreadsAndBlocksCalculations {
 
 
 
-cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
-{
-    cv::Mat image;
-    switch (pixel_type)
-    {
-    case PixelType::UCHAR:
-        image = cv::Mat(height, width, CV_8UC1);
-        for (int y = 0; y < image.rows; ++y) {
-            for (int x = 0; x < image.cols; ++x) {
-                image.at<uchar>(y, x) = static_cast<uchar>(image_data[y][x]);
-            }
-        }
-        break;
 
-    case PixelType::USHORT:
-        image = cv::Mat(height, width, CV_16UC1);
-        for (int y = 0; y < image.rows; ++y) {
-            for (int x = 0; x < image.cols; ++x) {
-                uchar current_val = image_data[y][x];
-                ushort current_val_ushort = (ushort)current_val;
-                ushort new_val = 0xFF00 + current_val_ushort;
-                image.at<ushort>(y, x) = new_val;
-            }
-        }
-        break;
-
-    case PixelType::FLOAT:
-        image = cv::Mat(height, width, CV_32FC1);
-        for (int y = 0; y < image.rows; ++y) {
-            for (int x = 0; x < image.cols; ++x) {
-                uchar current_val = image_data[y][x];
-                float current_val_float = (float)current_val;
-                float new_val = 1.0 * current_val_float;
-                image.at<float>(y, x) = new_val;
-            }
-        }
-        break;
-
-    }
-    return image;
-}
 
 
 #ifdef USE_CUDA
