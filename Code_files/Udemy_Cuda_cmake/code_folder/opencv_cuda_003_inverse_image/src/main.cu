@@ -313,32 +313,6 @@ int main()
     cudaEventCreate(&stop);
     cudaEventRecord(start);
 
-
-    //unsigned char max_val_uchar = 255;
-    //int alphaChannelNum = -1;
-    //int uchar_channelSize = 1;
-    //int input_image_width = image1_uchar.cols;
-    //int input_image_height = image1_uchar.rows;
-    //int uchar_strideSourceImage = input_image_width * uchar_pixel_size;
-    //int uchar_strideResultImage = input_image_width * uchar_pixel_size;
-    //int uchar_subPixelType = 1;
-    //
-    //InvertImageKernel<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1,
-    //    max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
-    //    input_image_width, input_image_height,
-    //    uchar_strideSourceImage, uchar_strideResultImage);
-
-    //int ushort_subPixelType = 2;
-    //int ushort_channelSize = 2;
-    //unsigned short max_val_ushort = 65535;
-    //int ushort_strideSourceImage = input_image_width * ushort_pixel_size;
-    //int ushort_strideResultImage = input_image_width * ushort_pixel_size;
-    //InvertImageKernel<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2,
-    //    max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
-    //    input_image_width, input_image_height,
-    //    ushort_strideSourceImage, ushort_strideResultImage);
-
-
     __wchar_t* Inverse_status1 = Inverse(device_inputData1, device_outputData1,
         uchar_subPixelType, max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
         input_image_width, input_image_height, uchar_strideSourceImage, uchar_strideResultImage,
