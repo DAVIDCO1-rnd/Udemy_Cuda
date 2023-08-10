@@ -123,6 +123,34 @@ cv::Mat calc_resized_image(cv::Mat image, double scale_factor)
     return scaledImage;
 }
 
+
+void create_output_image_cpu(cv::Mat image1_uchar, cv::Mat& image2_uchar, BlockAndGridDimensions* block_and_grid_dims)
+{
+    unsigned char* device_outputData2 = NULL;
+    unsigned int host_outputData_num_of_elements = image1_uchar.rows * image1_uchar.cols;
+    size_t host_outputData_num_of_bytes1 = host_outputData_num_of_elements * sizeof(unsigned char);
+    unsigned char* host_outputData1 = (unsigned char*)(malloc(host_outputData_num_of_bytes1));
+    dim3 blocksPerGrid = block_and_grid_dims->blocksPerGrid;
+    dim3 threadsPerBlock = block_and_grid_dims->threadsPerBlock;
+
+    __wchar_t* Inverse_status1 = Inverse_cpu(image1_uchar.data, host_outputData1,
+        uchar_subPixelType, max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
+        input_image_width, input_image_height, uchar_strideSourceImage, uchar_strideResultImage,
+        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
+        blocksPerGrid.x, blocksPerGrid.y);
+    image2_uchar.data = host_outputData1;
+
+
+    size_t host_outputData_num_of_bytes2 = host_outputData_num_of_elements * sizeof(unsigned short);
+    unsigned char* host_outputData2 = (unsigned char*)(malloc(host_outputData_num_of_bytes2));
+    __wchar_t* Inverse_status2 = Inverse_cpu(image1_ushort.data, host_outputData2,
+        ushort_subPixelType, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
+        input_image_width, input_image_height, ushort_strideSourceImage, ushort_strideResultImage,
+        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
+        blocksPerGrid.x, blocksPerGrid.y);
+    image2_ushort.data = host_outputData2;
+}
+
 int main()
 {
 #ifndef USE_X_DIMENSIONS_ONLY
@@ -363,29 +391,7 @@ int main()
     HANDLE_ERROR(cudaFree(device_ushort_pixel_size));
 
 #else //USE_CUDA
-    unsigned char* device_outputData2 = NULL;
-    unsigned int host_outputData_num_of_elements = image1_uchar.rows * image1_uchar.cols;
-    size_t host_outputData_num_of_bytes1 = host_outputData_num_of_elements * sizeof(unsigned char);
-    unsigned char* host_outputData1 = (unsigned char*)(malloc(host_outputData_num_of_bytes1));
-    blocksPerGrid = block_and_grid_dims->blocksPerGrid;
-    threadsPerBlock = block_and_grid_dims->threadsPerBlock;
-
-    __wchar_t* Inverse_status1 = Inverse_cpu(image1_uchar.data, host_outputData1,
-        uchar_subPixelType, max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
-        input_image_width, input_image_height, uchar_strideSourceImage, uchar_strideResultImage,
-        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
-        blocksPerGrid.x, blocksPerGrid.y);
-    image2_uchar.data = host_outputData1;
-
-
-    size_t host_outputData_num_of_bytes2 = host_outputData_num_of_elements * sizeof(unsigned short);
-    unsigned char* host_outputData2 = (unsigned char*)(malloc(host_outputData_num_of_bytes2));
-    __wchar_t* Inverse_status2 = Inverse_cpu(image1_ushort.data, host_outputData2,
-        ushort_subPixelType, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
-        input_image_width, input_image_height, ushort_strideSourceImage, ushort_strideResultImage,
-        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
-        blocksPerGrid.x, blocksPerGrid.y);
-    image2_ushort.data = host_outputData2;
+    create_output_image_cpu();
 #endif //USE_CUDA
 
 
