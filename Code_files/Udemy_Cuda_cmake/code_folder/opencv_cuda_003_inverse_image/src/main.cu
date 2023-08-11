@@ -2,6 +2,7 @@
 #include <iostream>
 #include <stdio.h>
 #include <cmath>
+#include <chrono>
 
 #include "Inverse.cuh"
 #include "Inverse_cpu.cuh"
@@ -131,7 +132,7 @@ int main()
 
 
     //going back from this folder: ./build/code_folder/Section3.3_spotlights/
-    std::string image_path = "../../../images/balloons.jpg";
+    std::string image_path = "../../../images/balloons_rgb_width_2048_height_2560.jpg";
     cv::Mat image1_uchar;
     cv::Mat image1_ushort;
     cv::Mat image1_float;
@@ -139,8 +140,8 @@ int main()
     {
         cv::Mat rgb_image1 = cv::imread(image_path);
         cv::cvtColor(rgb_image1, image1_uchar, cv::COLOR_BGR2GRAY);
-        cv::vconcat(image1_uchar, image1_uchar, image1_uchar);
-        cv::hconcat(image1_uchar, image1_uchar, image1_uchar);
+        //cv::vconcat(image1_uchar, image1_uchar, image1_uchar);
+        //cv::hconcat(image1_uchar, image1_uchar, image1_uchar);
         //int newWidth = 2048;
         //int newHeight = 2560;
         //cv::resize(rgb_image1, rgb_image1, cv::Size(newWidth, newHeight), cv::INTER_LINEAR);
@@ -204,6 +205,8 @@ int main()
 
     dim3 blocksPerGrid;
     dim3 threadsPerBlock;
+
+    auto start_time_cpu = std::chrono::high_resolution_clock::now();
 #ifdef USE_CUDA
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -233,64 +236,7 @@ int main()
     size_t device_outputData_num_of_bytes2 = device_outputData_num_of_elements * sizeof(unsigned short);
     HANDLE_ERROR(cudaMalloc((void**)&device_outputData2, device_outputData_num_of_bytes2));
 
-
-
-
-
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    //create device_input_width
-    int* device_input_width = NULL;
-    size_t device_input_width_bytes = sizeof(int);
-    HANDLE_ERROR(cudaMalloc((void**)&device_input_width, device_input_width_bytes));
-    HANDLE_ERROR(cudaMemcpy(device_input_width, &(image1_uchar.cols), device_input_width_bytes, cudaMemcpyHostToDevice));
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    //create device_input_height
-    int* device_input_height = NULL;
-    size_t device_input_height_bytes = sizeof(int);
-    HANDLE_ERROR(cudaMalloc((void**)&device_input_height, device_input_height_bytes));
-    HANDLE_ERROR(cudaMemcpy(device_input_height, &(image1_uchar.rows), device_input_height_bytes, cudaMemcpyHostToDevice));
-
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    //create device_uchar_pixel_size
-    int* device_uchar_pixel_size = NULL;
-    size_t device_uchar_pixel_size_bytes = sizeof(int);
-    HANDLE_ERROR(cudaMalloc((void**)&device_uchar_pixel_size, device_uchar_pixel_size_bytes));
-    
-    HANDLE_ERROR(cudaMemcpy(device_uchar_pixel_size, &(uchar_pixel_size), device_uchar_pixel_size_bytes, cudaMemcpyHostToDevice));
-
-    //create device_ushort_pixel_size
-    int* device_ushort_pixel_size = NULL;
-    size_t device_ushort_pixel_size_bytes = sizeof(int);
-    HANDLE_ERROR(cudaMalloc((void**)&device_ushort_pixel_size, device_ushort_pixel_size_bytes));
-
-    
-    HANDLE_ERROR(cudaMemcpy(device_ushort_pixel_size, &(ushort_pixel_size), device_ushort_pixel_size_bytes, cudaMemcpyHostToDevice));
-
-
-
-    //int blocksPerGrid = 256;    //dridDim is two-dimensional
-    //int threadsPerBlock = 256;  //blockDim is three-dimensional
-
-
-    //cudaDeviceProp  prop;
-    //int device_index = 0; //For now I assume there's only one GPu device
-    //HANDLE_ERROR(cudaGetDeviceProperties(&prop, device_index));
-    //int maxThreadsPerBlock = prop.maxThreadsPerBlock;
-    //int threadsPerBlock = std::min(image_height, maxThreadsPerBlock);
-    //int blocksPerGrid = (image_height * image_width + threadsPerBlock - 1) / threadsPerBlock;
-
-    int num_of_threads_x = 32;
-    int num_of_threads_y = 32;
-
-    int num_of_blocks_x = (image_width + num_of_threads_x - 1) / num_of_threads_x;
-    int num_of_blocks_y = (image_height + num_of_threads_y - 1) / num_of_threads_y;
 
 #ifdef USE_X_DIMENSIONS_ONLY
     blocksPerGrid = dim3(256, 1, 1);
@@ -303,21 +249,26 @@ int main()
     }
     else if (threads_and_blocks_calculations == ThreadsAndBlocksCalculations::Use_threads_as_warp_size)
     {
+        int num_of_threads_x = 32;
+        int num_of_threads_y = 32;
+        int num_of_blocks_x = (image_width + num_of_threads_x - 1) / num_of_threads_x;
+        int num_of_blocks_y = (image_height + num_of_threads_y - 1) / num_of_threads_y;
         blocksPerGrid = dim3(num_of_blocks_x, num_of_blocks_y, 1);
         threadsPerBlock = dim3(num_of_threads_x, num_of_threads_y);
     }
 #endif  //USE_X_DIMENSIONS_ONLY
-
-    cudaEvent_t start, stop;
-    cudaEventCreate(&start);
-    cudaEventCreate(&stop);
-    cudaEventRecord(start);
 
     __wchar_t* Inverse_status1 = Inverse(device_inputData1, device_outputData1,
         uchar_subPixelType, max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
         input_image_width, input_image_height, uchar_strideSourceImage, uchar_strideResultImage,
         threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
         blocksPerGrid.x, blocksPerGrid.y);
+    // Copy output vector from GPU buffer to host memory.
+    unsigned char* outputData1 = (unsigned char*)malloc(device_outputData_num_of_bytes1);
+    HANDLE_ERROR(cudaMemcpy(outputData1, device_outputData1, device_outputData_num_of_bytes1, cudaMemcpyDeviceToHost));
+    image2_uchar.data = outputData1;
+
+    
 
     __wchar_t* Inverse_status2 = Inverse(device_inputData2, device_outputData2,
         ushort_subPixelType, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
@@ -325,28 +276,12 @@ int main()
         threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
         blocksPerGrid.x, blocksPerGrid.y);
 
-
-
-    cudaEventRecord(stop);
-
-    cudaEventSynchronize(stop);
-    float milliseconds = 0;
-    cudaEventElapsedTime(&milliseconds, start, stop);
-    printf("gpu time = milliseconds =%.8f\n", milliseconds);
-
     // Check for any errors launching the kernel
     HANDLE_ERROR(cudaGetLastError());
-
 
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
     // any errors encountered during the launch.
     HANDLE_ERROR(cudaDeviceSynchronize());
-
-    // Copy output vector from GPU buffer to host memory.
-    unsigned char* outputData1 = (unsigned char*)malloc(device_outputData_num_of_bytes1);
-    HANDLE_ERROR(cudaMemcpy(outputData1, device_outputData1, device_outputData_num_of_bytes1, cudaMemcpyDeviceToHost));
-
-    image2_uchar.data = outputData1;
 
     // Copy output vector from GPU buffer to host memory.
     unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
@@ -357,13 +292,8 @@ int main()
     HANDLE_ERROR(cudaFree(device_inputData2));
     HANDLE_ERROR(cudaFree(device_outputData1));
     HANDLE_ERROR(cudaFree(device_outputData2));
-    HANDLE_ERROR(cudaFree(device_input_width));
-    HANDLE_ERROR(cudaFree(device_input_height));
-    HANDLE_ERROR(cudaFree(device_uchar_pixel_size));
-    HANDLE_ERROR(cudaFree(device_ushort_pixel_size));
 
 #else //USE_CUDA
-    unsigned char* device_outputData2 = NULL;
     unsigned int host_outputData_num_of_elements = image1_uchar.rows * image1_uchar.cols;
     size_t host_outputData_num_of_bytes1 = host_outputData_num_of_elements * sizeof(unsigned char);
     unsigned char* host_outputData1 = (unsigned char*)(malloc(host_outputData_num_of_bytes1));
@@ -387,6 +317,10 @@ int main()
         blocksPerGrid.x, blocksPerGrid.y);
     image2_ushort.data = host_outputData2;
 #endif //USE_CUDA
+
+    auto stop_time_cpu = std::chrono::high_resolution_clock::now();
+    auto duration_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(stop_time_cpu - start_time_cpu);
+    std::cout << "inverse image time = " << duration_milliseconds.count() << " milliseconds. " << std::endl;
 
 
     if (read_image_from_file == true)
