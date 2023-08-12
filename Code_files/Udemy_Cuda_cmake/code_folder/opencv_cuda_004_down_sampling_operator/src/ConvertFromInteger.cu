@@ -24,9 +24,7 @@ __wchar_t* RunConvertFromIntegerKernel(void* deviceInputData, void* deviceOutput
 									  int blockSizeX,int blockSizeY,
 									  int gridSizeX, int gridSizeY, void* stream)
 {
-	cudaStream_t cudaStream = 0;
-	  if(stream !=0)
-		  cudaStream = *((cudaStream_t*)stream);
+
 	
 	dim3 blockDim(blockSizeX , blockSizeY , 1 ); // block size = number of threads
 	dim3 gridDim(gridSizeX,gridSizeY); // grid size = number of blocks
@@ -37,7 +35,7 @@ __wchar_t* RunConvertFromIntegerKernel(void* deviceInputData, void* deviceOutput
 	{
 	case 1:
 		{
-			ConvertFromInteger<T, 1><<<gridDim ,blockDim, 0, cudaStream>>>
+			ConvertFromInteger<T, 1><<<gridDim ,blockDim>>>
 				((unsigned char*) deviceInputData, (unsigned char*) deviceOutputBuffer,
 				  (float)saturation, (float)convertValue,strideSrcImage,
 				 strideDstImage, sizeof(T), widthImage, heightImage);
@@ -45,7 +43,7 @@ __wchar_t* RunConvertFromIntegerKernel(void* deviceInputData, void* deviceOutput
 		}
 	case 3:
 		{
-			ConvertFromInteger<T, 3><<<gridDim ,blockDim, 0, cudaStream>>>
+			ConvertFromInteger<T, 3><<<gridDim ,blockDim>>>
 				((unsigned char*) deviceInputData, (unsigned char*) deviceOutputBuffer,
 				  (float)saturation,  (float)convertValue, strideSrcImage,
 				 strideDstImage, sizeof(T), widthImage, heightImage);
@@ -53,7 +51,7 @@ __wchar_t* RunConvertFromIntegerKernel(void* deviceInputData, void* deviceOutput
 		}
 	case 4:
 		{
-			ConvertFromInteger<T, 4><<<gridDim ,blockDim, 0, cudaStream>>>
+			ConvertFromInteger<T, 4><<<gridDim ,blockDim>>>
 				((unsigned char*) deviceInputData, (unsigned char*) deviceOutputBuffer,
 				  (float)saturation, (float)convertValue, strideSrcImage,
 				 strideDstImage, sizeof(T), widthImage, heightImage);
@@ -70,9 +68,7 @@ __wchar_t* RunConvertFromIntegerToFloatKernel(void* deviceInputData, void* devic
 									  int blockSizeX,int blockSizeY,
 									  int gridSizeX, int gridSizeY, void* stream)
 {
-	cudaStream_t cudaStream = 0;
-	  if(stream !=0)
-		  cudaStream = *((cudaStream_t*)stream);
+
 	
 	dim3 blockDim(blockSizeX , blockSizeY , 1 ); // block size = number of threads
 	dim3 gridDim(gridSizeX,gridSizeY); // grid size = number of blocks
@@ -83,7 +79,7 @@ __wchar_t* RunConvertFromIntegerToFloatKernel(void* deviceInputData, void* devic
 	{
 	case 1:
 		{
-			ConvertFromIntegerToFloat<1><<<gridDim ,blockDim, 0, cudaStream>>>
+			ConvertFromIntegerToFloat<1><<<gridDim ,blockDim>>>
 				((unsigned char*) deviceInputData, (unsigned char*) deviceOutputBuffer,
 				  (float)saturation, (float)convertValue,strideSrcImage,
 				 strideDstImage, widthImage, heightImage);
@@ -91,7 +87,7 @@ __wchar_t* RunConvertFromIntegerToFloatKernel(void* deviceInputData, void* devic
 		}
 	case 3:
 		{
-			ConvertFromIntegerToFloat<3><<<gridDim ,blockDim, 0,  cudaStream>>>
+			ConvertFromIntegerToFloat<3><<<gridDim ,blockDim>>>
 				((unsigned char*) deviceInputData, (unsigned char*) deviceOutputBuffer,
 				  (float)saturation,  (float)convertValue, strideSrcImage,
 				 strideDstImage, widthImage, heightImage);
@@ -99,7 +95,7 @@ __wchar_t* RunConvertFromIntegerToFloatKernel(void* deviceInputData, void* devic
 		}
 	case 4:
 		{
-			ConvertFromIntegerToFloat<4><<<gridDim ,blockDim, 0,  cudaStream>>>
+			ConvertFromIntegerToFloat<4><<<gridDim ,blockDim>>>
 				((unsigned char*) deviceInputData, (unsigned char*) deviceOutputBuffer,
 				  (float)saturation, (float)convertValue, strideSrcImage,
 				 strideDstImage, widthImage, heightImage);
@@ -151,9 +147,7 @@ __wchar_t* ConvertFromIntegeToFloat__Internal(void* deviceData,
 									  int blockSizeX,int blockSizeY,
 									  int gridSizeX, int gridSizeY, void* stream)
 {
-	cudaStream_t cudaStream = 0;
-	  if(stream !=0)
-		  cudaStream = *((cudaStream_t*)stream);
+
 
 	dim3 blockDim(blockSizeX , blockSizeY , 1 ); // block size = number of threads
 	dim3 gridDim(gridSizeX,gridSizeY); // grid size = number of blocks
@@ -164,19 +158,19 @@ __wchar_t* ConvertFromIntegeToFloat__Internal(void* deviceData,
 	{
 	case 1:
 		{
-			ConvertFromIntegerToFloat<1><<<gridDim ,blockDim, 0, cudaStream>>>
+			ConvertFromIntegerToFloat<1><<<gridDim ,blockDim>>>
 				((unsigned char*) deviceData, (float)convertValue, strideImage, widthImage, heightImage);
 			return 0;
 		}
 	case 3:
 		{
-			ConvertFromIntegerToFloat<3><<<gridDim ,blockDim, 0, cudaStream>>>
+			ConvertFromIntegerToFloat<3><<<gridDim ,blockDim>>>
 				((unsigned char*) deviceData, (float)convertValue, strideImage, widthImage, heightImage);
 			return 0;
 		}
 	case 4:
 		{
-			ConvertFromIntegerToFloat<4><<<gridDim ,blockDim, 0, cudaStream>>>
+			ConvertFromIntegerToFloat<4><<<gridDim ,blockDim>>>
 				((unsigned char*) deviceData, (float)convertValue, strideImage, widthImage, heightImage);
 			return 0;
 		}

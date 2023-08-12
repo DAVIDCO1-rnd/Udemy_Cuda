@@ -39,9 +39,7 @@ __wchar_t* DownSampleTopLeft_Parallel(
 	int subPixelType, int maxValue, int alphaChannelNumber, int pixelSize, int channelSize,
 	int blockSizeX, int blockSizeY, int blockSizeZ, int gridSizeX, int gridSizeY, void* stream)
 {
-	cudaStream_t cudaStream = 0;
-	if (stream != 0)
-		cudaStream = *((cudaStream_t*)stream);
+
 
 	dim3 blockDim(blockSizeX, blockSizeY, blockSizeZ); // block size = number of threads
 	dim3 gridDim(gridSizeX, gridSizeY); // grid size = number of blocks
@@ -57,7 +55,7 @@ __wchar_t* DownSampleTopLeft_Parallel(
 	case 1: // 8bit (0...0xff)
 	{
 
-		DownSampleTopLeftKernel<unsigned char> << <gridDim, blockDim, 0, cudaStream >> >
+		DownSampleTopLeftKernel<unsigned char> << <gridDim, blockDim >> >
 			((unsigned char*)deviceInputBuffer, (unsigned char*)deviceOutputBuffer,
 			widthSourceImage, heightSourceImage, strideSourceImage,
 			widthDestImage, heightDestImage, strideDestImage,
@@ -70,7 +68,7 @@ __wchar_t* DownSampleTopLeft_Parallel(
 	case 2: // 16bit (0...0xffff)
 	{
 
-		DownSampleTopLeftKernel<unsigned short> << <gridDim, blockDim, 0, cudaStream >> >
+		DownSampleTopLeftKernel<unsigned short> << <gridDim, blockDim >> >
 			((unsigned char*)deviceInputBuffer, (unsigned char*)deviceOutputBuffer,
 			widthSourceImage, heightSourceImage, strideSourceImage,
 			widthDestImage, heightDestImage, strideDestImage,
@@ -83,7 +81,7 @@ __wchar_t* DownSampleTopLeft_Parallel(
 	case 4: // Float (0...1)
 	{
 
-		DownSampleTopLeftKernelFloat<float> << <gridDim, blockDim, 0, cudaStream >> >
+		DownSampleTopLeftKernelFloat<float> << <gridDim, blockDim >> >
 			((unsigned char*)deviceInputBuffer, (unsigned char*)deviceOutputBuffer,
 			widthSourceImage, heightSourceImage, strideSourceImage,
 			widthDestImage, heightDestImage, strideDestImage,
@@ -130,9 +128,7 @@ __wchar_t* DownSample_Parallel(
 		int subPixelType, int maxValue, int alphaChannelNumber, int pixelSize, int channelSize,			
 		int blockSizeX, int blockSizeY, int blockSizeZ, int gridSizeX, int gridSizeY, void* stream)
 {
-	cudaStream_t cudaStream = 0;
-	if(stream !=0)
-		cudaStream = *((cudaStream_t*)stream);
+
 
 	dim3 blockDim(blockSizeX, blockSizeY, blockSizeZ); // block size = number of threads
     dim3 gridDim(gridSizeX, gridSizeY); // grid size = number of blocks
@@ -148,7 +144,7 @@ __wchar_t* DownSample_Parallel(
 		case 1: // 8bit (0...0xff)
 		{
 		
-			DownSampleKernel<unsigned char> <<<gridDim, blockDim, 0, cudaStream>>>
+			DownSampleKernel<unsigned char> <<<gridDim, blockDim>>>
 			  ((unsigned char*)deviceInputBuffer, (unsigned char*)deviceOutputBuffer,
 				widthSourceImage, heightSourceImage, strideSourceImage,
 				widthDestImage, heightDestImage, strideDestImage,
@@ -161,7 +157,7 @@ __wchar_t* DownSample_Parallel(
 		case 2: // 16bit (0...0xffff)
 		{
 		
-			DownSampleKernel<unsigned short> <<<gridDim, blockDim, 0, cudaStream>>>
+			DownSampleKernel<unsigned short> <<<gridDim, blockDim>>>
 			  ((unsigned char*)deviceInputBuffer, (unsigned char*)deviceOutputBuffer,
 				widthSourceImage, heightSourceImage, strideSourceImage,
 				widthDestImage, heightDestImage, strideDestImage,
@@ -174,7 +170,7 @@ __wchar_t* DownSample_Parallel(
 		case 4: // Float (0...1)
 		{
 			
-			DownSampleKernelFloat<float> <<<gridDim, blockDim, 0, cudaStream>>>
+			DownSampleKernelFloat<float> <<<gridDim, blockDim>>>
 			  ((unsigned char*)deviceInputBuffer, (unsigned char*)deviceOutputBuffer,
 				widthSourceImage, heightSourceImage, strideSourceImage,
 				widthDestImage, heightDestImage, strideDestImage,
@@ -207,9 +203,7 @@ __wchar_t* RunFastDownSampleKernel(void* deviceInputBuffer, void* deviceIntegerO
 								   void* stream)
 {
 
-	cudaStream_t cudaStream = 0;
-	if(stream !=0)
-		cudaStream = *((cudaStream_t*)stream);
+
 
 	dim3 blockDim(blockSizeSrcX, blockSizeSrcY, 1); // block size = number of threads
     dim3 gridDim(gridSizeSrcX, gridSizeSrcY); // grid size = number of blocks
@@ -222,7 +216,7 @@ __wchar_t* RunFastDownSampleKernel(void* deviceInputBuffer, void* deviceIntegerO
 		{
 			if (horizontalScale == 1)
 			{
-				FastDownSampleVerticalKernel<T, 1, sizeof(T) ><<<gridDim, blockDim, 0, cudaStream>>>
+				FastDownSampleVerticalKernel<T, 1, sizeof(T) ><<<gridDim, blockDim>>>
 					((unsigned char*)deviceInputBuffer, (unsigned char*)deviceIntegerOutputBuffer,
 					widthSourceImage, heightSourceImage, strideSourceImage,
 					 strideIntegerDestImage,
@@ -230,7 +224,7 @@ __wchar_t* RunFastDownSampleKernel(void* deviceInputBuffer, void* deviceIntegerO
 			}
 			else if (verticalScale == 1)
 			{
-				FastDownSampleHorizontalKernel<T, 1, sizeof(T)><<<gridDim, blockDim, 0, cudaStream>>>
+				FastDownSampleHorizontalKernel<T, 1, sizeof(T)><<<gridDim, blockDim>>>
 					((unsigned char*)deviceInputBuffer, (unsigned char*)deviceIntegerOutputBuffer,
 					widthSourceImage, heightSourceImage, strideSourceImage, 
 					 strideIntegerDestImage,
@@ -238,7 +232,7 @@ __wchar_t* RunFastDownSampleKernel(void* deviceInputBuffer, void* deviceIntegerO
 			}
 			else
 			{
-				FastDownSampleKernel<T, 1, sizeof(T)><<<gridDim, blockDim, 0, cudaStream>>>
+				FastDownSampleKernel<T, 1, sizeof(T)><<<gridDim, blockDim>>>
 					((unsigned char*)deviceInputBuffer, (unsigned char*)deviceIntegerOutputBuffer,
 					widthSourceImage, heightSourceImage, strideSourceImage,
 					strideIntegerDestImage,
@@ -250,7 +244,7 @@ __wchar_t* RunFastDownSampleKernel(void* deviceInputBuffer, void* deviceIntegerO
 		{
 			if (horizontalScale == 1)
 			{
-				FastDownSampleVerticalKernel<T, 3, sizeof(T)><<<gridDim, blockDim, 0, cudaStream>>>
+				FastDownSampleVerticalKernel<T, 3, sizeof(T)><<<gridDim, blockDim>>>
 					((unsigned char*)deviceInputBuffer, (unsigned char*)deviceIntegerOutputBuffer,
 					widthSourceImage, heightSourceImage, strideSourceImage,
 					strideIntegerDestImage,
@@ -258,7 +252,7 @@ __wchar_t* RunFastDownSampleKernel(void* deviceInputBuffer, void* deviceIntegerO
 			}
 			else if (verticalScale == 1)
 			{
-				FastDownSampleHorizontalKernel<T, 3, sizeof(T)><<<gridDim, blockDim, 0, cudaStream>>>
+				FastDownSampleHorizontalKernel<T, 3, sizeof(T)><<<gridDim, blockDim>>>
 					((unsigned char*)deviceInputBuffer, (unsigned char*)deviceIntegerOutputBuffer,
 					widthSourceImage, heightSourceImage, strideSourceImage, 
 					strideIntegerDestImage,
@@ -266,7 +260,7 @@ __wchar_t* RunFastDownSampleKernel(void* deviceInputBuffer, void* deviceIntegerO
 			}
 			else
 			{
-				FastDownSampleKernel<T, 3, sizeof(T)><<<gridDim, blockDim, 0, cudaStream>>>
+				FastDownSampleKernel<T, 3, sizeof(T)><<<gridDim, blockDim>>>
 					((unsigned char*)deviceInputBuffer, (unsigned char*)deviceIntegerOutputBuffer,
 					widthSourceImage,  heightSourceImage,  strideSourceImage, 
 					strideIntegerDestImage,
@@ -279,7 +273,7 @@ __wchar_t* RunFastDownSampleKernel(void* deviceInputBuffer, void* deviceIntegerO
 		{
 			if (horizontalScale == 1)
 			{
-				FastDownSampleVerticalKernel<T, 4, sizeof(T)><<<gridDim, blockDim, 0, cudaStream>>>
+				FastDownSampleVerticalKernel<T, 4, sizeof(T)><<<gridDim, blockDim>>>
 					((unsigned char*)deviceInputBuffer, (unsigned char*)deviceIntegerOutputBuffer,
 					widthSourceImage, heightSourceImage, strideSourceImage, 
 					 strideIntegerDestImage,
@@ -287,7 +281,7 @@ __wchar_t* RunFastDownSampleKernel(void* deviceInputBuffer, void* deviceIntegerO
 			}
 			else if (verticalScale == 1)
 			{
-				FastDownSampleHorizontalKernel<T, 4, sizeof(T)><<<gridDim, blockDim, 0, cudaStream>>>
+				FastDownSampleHorizontalKernel<T, 4, sizeof(T)><<<gridDim, blockDim>>>
 					((unsigned char*)deviceInputBuffer, (unsigned char*)deviceIntegerOutputBuffer,
 					widthSourceImage, heightSourceImage, strideSourceImage, 
 					strideIntegerDestImage,
@@ -295,7 +289,7 @@ __wchar_t* RunFastDownSampleKernel(void* deviceInputBuffer, void* deviceIntegerO
 			}
 			else
 			{
-				FastDownSampleKernel<T, 4, sizeof(T)><<<gridDim, blockDim, 0, cudaStream>>>
+				FastDownSampleKernel<T, 4, sizeof(T)><<<gridDim, blockDim>>>
 					((unsigned char*)deviceInputBuffer, (unsigned char*)deviceIntegerOutputBuffer,
 					widthSourceImage,  heightSourceImage,  strideSourceImage, 
 					strideIntegerDestImage,
