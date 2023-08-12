@@ -1,6 +1,5 @@
 #include <string>
 #include <iostream>
-#include <stdio.h>
 #include <cmath>
 #include <chrono>
 
@@ -263,11 +262,6 @@ int main()
         input_image_width, input_image_height, uchar_strideSourceImage, uchar_strideResultImage,
         threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
         blocksPerGrid.x, blocksPerGrid.y);
-    // Copy output vector from GPU buffer to host memory.
-    unsigned char* outputData1 = (unsigned char*)malloc(device_outputData_num_of_bytes1);
-    HANDLE_ERROR(cudaMemcpy(outputData1, device_outputData1, device_outputData_num_of_bytes1, cudaMemcpyDeviceToHost));
-    image2_uchar.data = outputData1;
-
     
 
     __wchar_t* Inverse_status2 = Inverse(device_inputData2, device_outputData2,
@@ -282,6 +276,11 @@ int main()
     // cudaDeviceSynchronize waits for the kernel to finish, and returns
     // any errors encountered during the launch.
     HANDLE_ERROR(cudaDeviceSynchronize());
+
+    // Copy output vector from GPU buffer to host memory.
+    unsigned char* outputData1 = (unsigned char*)malloc(device_outputData_num_of_bytes1);
+    HANDLE_ERROR(cudaMemcpy(outputData1, device_outputData1, device_outputData_num_of_bytes1, cudaMemcpyDeviceToHost));
+    image2_uchar.data = outputData1;
 
     // Copy output vector from GPU buffer to host memory.
     unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
