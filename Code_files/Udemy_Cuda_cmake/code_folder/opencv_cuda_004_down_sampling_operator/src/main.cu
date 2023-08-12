@@ -26,7 +26,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 
 
-bool read_image_from_file = true;
+bool read_image_from_file = false;
 
 
 #ifndef USE_X_DIMENSIONS_ONLY
@@ -158,9 +158,10 @@ int main()
     if (read_image_from_file == false)
     {
         uchar image_data[height][width] = {
-           {0x00, 0x01, 0x02, 0x03, 0x04},
-           {0x05, 0x06, 0x07, 0x08, 0x09},
-           {0x10, 0x11, 0x12, 0x13, 0x14}
+           {0x00, 0x01, 0x02, 0x03, 0x04, 0x05},
+           {0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
+           {0x12, 0x13, 0x14, 0x15, 0x16, 0x17},
+           {0x18, 0x19, 0x20, 0x21, 0x22, 0x23}
         };
         image1_uchar = build_image_from_data(image_data, PixelType::UCHAR);
         print_pixels("built-in image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
