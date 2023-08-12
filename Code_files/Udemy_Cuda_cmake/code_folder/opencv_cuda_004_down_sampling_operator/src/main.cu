@@ -29,7 +29,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 
 
-bool read_image_from_file = false;
+bool read_image_from_file = true;
 
 
 #ifndef USE_X_DIMENSIONS_ONLY
@@ -210,10 +210,9 @@ int main()
     int ushort_strideSourceImage = input_image_width * ushort_pixel_size;
     int ushort_strideResultImage = output_image_width * ushort_pixel_size;
 
-    int image_height = image1_uchar.rows;
-    int image_width = image1_uchar.cols;
+
     int num_of_channels = 1;
-    BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
+    BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, output_image_width, output_image_height);
 
     dim3 blocksPerGrid;
     dim3 threadsPerBlock;
@@ -263,8 +262,8 @@ int main()
     {
         int num_of_threads_x = 32;
         int num_of_threads_y = 32;
-        int num_of_blocks_x = (image_width + num_of_threads_x - 1) / num_of_threads_x;
-        int num_of_blocks_y = (image_height + num_of_threads_y - 1) / num_of_threads_y;
+        int num_of_blocks_x = (output_image_width + num_of_threads_x - 1) / num_of_threads_x;
+        int num_of_blocks_y = (output_image_height + num_of_threads_y - 1) / num_of_threads_y;
         blocksPerGrid = dim3(num_of_blocks_x, num_of_blocks_y, 1);
         threadsPerBlock = dim3(num_of_threads_x, num_of_threads_y);
     }

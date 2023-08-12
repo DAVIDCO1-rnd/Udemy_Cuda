@@ -203,14 +203,17 @@ template<class T> void DownSampleKernel_cpu(
 								wRight = MIN(xMaxRange - (x - 0.5f), 1);
 
 								int indexSrc = PixelOffset_cpu(y, x, channel, strideSource, pixelSize, channelSize);
-								sum += (*(Pixel_cpu<T>(inputData, indexSrc))) * wTop * wBottom * wLeft * wRight;
+								T pixel_val = *(Pixel_cpu<T>(inputData, indexSrc));
+								float val_to_add = pixel_val * wTop * wBottom * wLeft * wRight;
+								sum += pixel_val;
 							}
 						}
 
-						sum /= (horizontalScale * verticalScale);
+						float average_pixel = sum / (horizontalScale * verticalScale);
 
 						int indexDst = PixelOffset_cpu(destY, destX, channel, strideDest, pixelSize, channelSize);
-						*(Pixel_cpu<T>(outputData, indexDst)) = RoundAndLimitResult_cpu<T>(sum, white);
+						T rounded_val = RoundAndLimitResult_cpu<T>(average_pixel, white);
+						*(Pixel_cpu<T>(outputData, indexDst)) = rounded_val;
 					}
 				}
 			}
