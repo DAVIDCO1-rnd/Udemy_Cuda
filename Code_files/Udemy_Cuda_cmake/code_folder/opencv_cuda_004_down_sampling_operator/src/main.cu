@@ -29,7 +29,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 
 
-bool read_image_from_file = true;
+bool read_image_from_file = false;
 
 
 #ifndef USE_X_DIMENSIONS_ONLY
