@@ -5,7 +5,7 @@
 #pragma once
 
 #include "Utils_device_cpu.cu"
-// #include "cutil_math.h"
+#include "fake_cuda_in_cpu.cuh"
 
 template<class T, int numOfChannels>
 void ConvertFromInteger_cpu(unsigned char* inputData,
@@ -46,7 +46,7 @@ void ConvertFromInteger_cpu(unsigned char* inputData,
 					}
 
 
-//					__syncthreads(); //david - commented since it's cpu
+					syncthreads_cpu();
 
 					index = PixelOffset_cpu(row, column, 0, strideResultImage, channelSize * numOfChannels, channelSize);
 
@@ -98,7 +98,7 @@ void ConvertFromIntegerToFloat_cpu(unsigned char* data, float convertValue,
 					}
 
 
-//					__syncthreads(); //david - commented since it's cpu
+					syncthreads_cpu();
 
 					*(Pixel_cpu<float>(data, index)) = value.x;
 					if (numOfChannels > 1)
@@ -156,7 +156,7 @@ void ConvertFromIntegerToFloat_cpu(unsigned char* inputData,
 					}
 
 
-//					__syncthreads(); //david - commented since it's cpu
+					syncthreads_cpu();
 
 					index = PixelOffset_cpu(row, column, 0, strideResultImage, GRAYFLOAT_SIZE * numOfChannels, GRAYFLOAT_SIZE);
 

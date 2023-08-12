@@ -349,7 +349,7 @@ void FastDownSampleKernel_cpu(unsigned char* inputData, unsigned char* outputDat
 							pixel.w = (float)(*Pixel_cpu<T>(inputData, indexSrc + 3 * channelSizeSource)) * convertValue;
 					}
 
-//					__syncthreads(); //david - commented since it's cpu
+					syncthreads_cpu();
 
 					int destWidth = ceil(horizontalScale * sourceWidth);
 					int destHeight = ceil(verticalScale * sourceHeight);
@@ -438,7 +438,7 @@ void FastDownSampleVerticalKernel_cpu(unsigned char* inputData, unsigned char* o
 							pixel.w = (float)(*Pixel_cpu<T>(inputData, indexSrc + 3 * channelSizeSource)) * convertValue;
 					}
 
-//					__syncthreads(); //david - commented since it's cpu
+					syncthreads_cpu();
 
 					int destHeight = ceil(verticalScale * sourceHeight);
 
@@ -502,7 +502,7 @@ void FastDownSampleHorizontalKernel_cpu(unsigned char* inputData, unsigned char*
 							pixel.w = (float)(*Pixel_cpu<T>(inputData, indexSrc + 3 * channelSizeSource)) * convertValue;
 					}
 
-//					__syncthreads(); //david - commented since it's cpu
+					syncthreads_cpu();
 
 					int destWidth = ceil(horizontalScale * sourceWidth);
 
