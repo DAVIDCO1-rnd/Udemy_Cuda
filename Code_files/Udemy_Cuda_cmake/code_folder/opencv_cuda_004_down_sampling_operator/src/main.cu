@@ -3,8 +3,8 @@
 #include <cmath>
 #include <chrono>
 
-#include "Inverse.cuh"
-#include "Inverse_cpu.cuh"
+#include "DownSampling.cuh"
+//#include "DownSampling_cpu.cuh"
 #include "utils_custom_matrices.h"
 
 
@@ -172,11 +172,18 @@ int main()
         print_pixels("built-in image1_float", image1_float.data, image1_float.rows, image1_float.cols, PixelType::FLOAT);
     }
 
+    double verticalScale = 0.5;
+    double horizontalScale = 0.5;
 
+    int image1_height = image1_uchar.rows;
+    int image1_width = image1_uchar.cols;
 
-    cv::Mat image2_uchar(image1_uchar.rows, image1_uchar.cols, CV_8UC1);
-    cv::Mat image2_ushort(image1_ushort.rows, image1_ushort.cols, CV_16UC1);
-    cv::Mat image2_float(image1_float.rows, image1_float.cols, CV_32FC1);
+    int image2_height = (int)ceil(image1_height * verticalScale);
+    int image2_width = (int)ceil(image1_width * horizontalScale);
+
+    cv::Mat image2_uchar(image2_height, image2_width, CV_8UC1);
+    cv::Mat image2_ushort(image2_height, image2_width, CV_16UC1);
+    cv::Mat image2_float(image2_height, image2_width, CV_32FC1);
 
 
     unsigned char max_val_uchar = 255;
@@ -184,9 +191,11 @@ int main()
     int uchar_channelSize = 1;
     int input_image_width = image1_uchar.cols;
     int input_image_height = image1_uchar.rows;
+    int output_image_width = image2_uchar.cols;
+    int output_image_height = image2_uchar.rows;
     int uchar_pixel_size = (int)PixelType::UCHAR;
     int uchar_strideSourceImage = input_image_width * uchar_pixel_size;
-    int uchar_strideResultImage = input_image_width * uchar_pixel_size;
+    int uchar_strideResultImage = output_image_width * uchar_pixel_size;
     int uchar_subPixelType = 1;
 
 
@@ -195,7 +204,7 @@ int main()
     int ushort_channelSize = 2;    
     int ushort_pixel_size = (int)PixelType::USHORT;
     int ushort_strideSourceImage = input_image_width * ushort_pixel_size;
-    int ushort_strideResultImage = input_image_width * ushort_pixel_size;
+    int ushort_strideResultImage = output_image_width * ushort_pixel_size;
 
     int image_height = image1_uchar.rows;
     int image_width = image1_uchar.cols;
@@ -257,18 +266,47 @@ int main()
     }
 #endif  //USE_X_DIMENSIONS_ONLY
 
-    __wchar_t* Inverse_status1 = Inverse(device_inputData1, device_outputData1,
-        uchar_subPixelType, max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
-        input_image_width, input_image_height, uchar_strideSourceImage, uchar_strideResultImage,
+    //String errorMessage = ExternalDownSample
+    //(sourceDataPointer, resultDataPointer,
+    //    sourceImage.Width, sourceImage.Height, sourceImage.Stride,
+    //    resultImage.Width, resultImage.Height, resultImage.Stride,
+    //    horizontalScale, verticalScale,
+    //    (int)sourceImage.SubPixelType, sourceImage.MaxValue, sourceImage.AlphaChannelNumber,
+    //    sourceImage.PixelSize, sourceImage.PixelSize / sourceImage.Channels,
+    //    dims.BlockSize[0], dims.BlockSize[1], dims.BlockSize[2],
+    //    dims.GridSize[0], dims.GridSize[1]);
+
+
+    //__wchar_t* DownSample(
+    //    void* deviceInputBuffer, void* deviceOutputBuffer,
+    //    int widthSourceImage, int heightSourceImage, int strideSourceImage,
+    //    int widthDestImage, int heightDestImage, int strideDestImage,
+    //    double horizontalScale, double verticalScale,
+    //    int subPixelType, int maxValue, int alphaChannelNumber, int pixelSize, int channelSize,
+    //    int blockSizeX, int blockSizeY, int blockSizeZ, int gridSizeX, int gridSizeY)
+
+    __wchar_t* DownSample_status1 = DownSample(device_inputData1, device_outputData1,
+        input_image_width, input_image_height, uchar_strideSourceImage, 
+        output_image_width, output_image_height, uchar_strideResultImage,
+        horizontalScale, verticalScale,
+        uchar_pixel_size, max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
+        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
+        blocksPerGrid.x, blocksPerGrid.y);
+
+    __wchar_t* DownSample_status2 = DownSample(device_inputData2, device_outputData2,
+        input_image_width, input_image_height, ushort_strideSourceImage,
+        output_image_width, output_image_height, ushort_strideResultImage,
+        horizontalScale, verticalScale,
+        ushort_pixel_size, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
         threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
         blocksPerGrid.x, blocksPerGrid.y);
     
 
-    __wchar_t* Inverse_status2 = Inverse(device_inputData2, device_outputData2,
-        ushort_subPixelType, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
-        input_image_width, input_image_height, ushort_strideSourceImage, ushort_strideResultImage,
-        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
-        blocksPerGrid.x, blocksPerGrid.y);
+    //__wchar_t* Inverse_status2 = Inverse(device_inputData2, device_outputData2,
+    //    ushort_subPixelType, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
+    //    input_image_width, input_image_height, ushort_strideSourceImage, ushort_strideResultImage,
+    //    threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
+    //    blocksPerGrid.x, blocksPerGrid.y);
 
     // Check for any errors launching the kernel
     HANDLE_ERROR(cudaGetLastError());
@@ -319,7 +357,7 @@ int main()
 
     auto stop_time_cpu = std::chrono::high_resolution_clock::now();
     auto duration_milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(stop_time_cpu - start_time_cpu);
-    std::cout << "inverse image time = " << duration_milliseconds.count() << " milliseconds. " << std::endl;
+    std::cout << "down sampling image time = " << duration_milliseconds.count() << " milliseconds. " << std::endl;
 
 
     if (read_image_from_file == true)
