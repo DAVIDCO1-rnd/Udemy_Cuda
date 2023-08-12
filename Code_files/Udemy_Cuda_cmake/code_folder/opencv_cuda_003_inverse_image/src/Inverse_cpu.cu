@@ -57,9 +57,5 @@ __wchar_t* Inverse_cpu(void* deviceInputBuffer, void* deviceOutputBuffer,
 	}
 	}
 
-	cudaError_t err = cudaThreadSynchronize();
-	if (err != 0)
-		return CudaErrorToErrorMessage(err);
-
 	return NULL;
 }

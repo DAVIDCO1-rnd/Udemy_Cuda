@@ -2,16 +2,19 @@
 #include <iostream>
 #include <cmath>
 #include <chrono>
-
-#include "DownSampling.cuh"
-//#include "DownSampling_cpu.cuh"
 #include "utils_custom_matrices.h"
 
 
 
 
-#define USE_CUDA
+//#define USE_CUDA
 //#define USE_X_DIMENSIONS_ONLY
+
+#ifdef USE_CUDA
+    #include "DownSampling.cuh"
+#else //USE_CUDA
+    #include "DownSampling_cpu.cuh"
+#endif //USE_CUDA
 
 
 
@@ -26,7 +29,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 
 
-bool read_image_from_file = false;
+bool read_image_from_file = true;
 
 
 #ifndef USE_X_DIMENSIONS_ONLY
@@ -338,21 +341,28 @@ int main()
     blocksPerGrid = block_and_grid_dims->blocksPerGrid;
     threadsPerBlock = block_and_grid_dims->threadsPerBlock;
 
-    __wchar_t* Inverse_status1 = Inverse_cpu(image1_uchar.data, host_outputData1,
-        uchar_subPixelType, max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
-        input_image_width, input_image_height, uchar_strideSourceImage, uchar_strideResultImage,
+    __wchar_t* DownSample_status1 = DownSample_cpu(image1_uchar.data, host_outputData1,
+        input_image_width, input_image_height, uchar_strideSourceImage,
+        output_image_width, output_image_height, uchar_strideResultImage,
+        horizontalScale, verticalScale,
+        uchar_pixel_size, max_val_uchar, alphaChannelNum, uchar_pixel_size, uchar_channelSize,
         threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
         blocksPerGrid.x, blocksPerGrid.y);
+
     image2_uchar.data = host_outputData1;
 
 
     size_t host_outputData_num_of_bytes2 = host_outputData_num_of_elements * sizeof(unsigned short);
     unsigned char* host_outputData2 = (unsigned char*)(malloc(host_outputData_num_of_bytes2));
-    __wchar_t* Inverse_status2 = Inverse_cpu(image1_ushort.data, host_outputData2,
-        ushort_subPixelType, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
-        input_image_width, input_image_height, ushort_strideSourceImage, ushort_strideResultImage,
+
+    __wchar_t* DownSample_status2 = DownSample_cpu(image1_ushort.data, host_outputData2,
+        input_image_width, input_image_height, ushort_strideSourceImage,
+        output_image_width, output_image_height, ushort_strideResultImage,
+        horizontalScale, verticalScale,
+        ushort_pixel_size, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
         threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
         blocksPerGrid.x, blocksPerGrid.y);
+
     image2_ushort.data = host_outputData2;
 #endif //USE_CUDA
 

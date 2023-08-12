@@ -54,9 +54,5 @@ __wchar_t* rotate_90_cpu(void* deviceInputBuffer, void* deviceOutputBuffer, int 
 	}
 	}
 
-	cudaError_t err = cudaThreadSynchronize();
-	if (err != 0)
-		return CudaErrorToErrorMessage(err);
-
 	return NULL;
 }
