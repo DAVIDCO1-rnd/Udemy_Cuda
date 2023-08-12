@@ -6,8 +6,8 @@
 
 #include <stdio.h>
 //#include <cutil.h>
-#include <cuda.h>
-#include <cuda_runtime_api.h>
+//#include <cuda.h>
+//#include <cuda_runtime_api.h>
 
 #include "CudaMain.cuh"
 #include "Inverse_cpu.cuh"
