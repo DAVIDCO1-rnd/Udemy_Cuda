@@ -170,13 +170,31 @@ template<class T> void DownSampleKernel_cpu(
 						if (!DecodeYXC_cpu(&destY, &destX, &channel, destWidth, destHeight, thread_Idx_x, thread_Idx_y, thread_Idx_z, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
 							return;
 
+						if (destX == ((int)(0.25 * destWidth)) && destY == ((int)(0.35 * destHeight)))
+						{
+							int david = 5;
+						}
+
 						// Calculate source's center
 						// Calculate target's center
 						// Centralize target coordinates
 						// Calculate source pixel center in centralized coordinates
 						// De-Centralize coordinates
-						float sourceX = (destX - (destWidth - 1) * 0.5f) * horizontalScale + (sourceWidth - 1) * 0.5f;
-						float sourceY = (destY - (destHeight - 1) * 0.5f) * verticalScale + (sourceHeight - 1) * 0.5f;
+
+						float dest_centerX = (destWidth - 1) * 0.5f;
+						float dest_centerY = (destHeight - 1) * 0.5f;
+
+						float diff_dest_center_x = destX - dest_centerX;
+						float diff_dest_center_y = destY - dest_centerY;
+
+						float scaled_diff_dest_center_x = diff_dest_center_x * horizontalScale;
+						float scaled_diff_dest_center_y = diff_dest_center_y * verticalScale;
+
+						float source_centerX = (sourceWidth - 1) * 0.5f;
+						float source_centerY = (sourceHeight - 1) * 0.5f;
+
+						float sourceX = scaled_diff_dest_center_x + source_centerX;
+						float sourceY = scaled_diff_dest_center_y + source_centerY;
 
 						// Calculate source range that is averaged to target range
 						float xMinRange = sourceX - 0.5f * horizontalScale;

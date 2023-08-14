@@ -161,23 +161,23 @@ int main()
     if (read_image_from_file == false)
     {
         uchar image_data[height][width] = {
-           {0x00, 0x01, 0x02, 0x03, 0x04, 0x05},
-           {0x06, 0x07, 0x08, 0x09, 0x10, 0x11},
-           {0x12, 0x13, 0x14, 0x15, 0x16, 0x17},
-           {0x18, 0x19, 0x20, 0x21, 0x22, 0x23}
+           {0,  1,  2,  3,  4,  5},
+           {6,  7,  8,  9,  10, 11},
+           {12, 13, 14, 15, 16, 17},
+           {18, 19, 20, 21, 22, 23}
         };
         image1_uchar = build_image_from_data(image_data, PixelType::UCHAR);
-        print_pixels("built-in image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
+        print_pixels("built-in image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR, false);
 
         image1_ushort = build_image_from_data(image_data, PixelType::USHORT);
-        print_pixels("built-in image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
+        print_pixels("built-in image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT, false);
 
         image1_float = build_image_from_data(image_data, PixelType::FLOAT);
-        print_pixels("built-in image1_float", image1_float.data, image1_float.rows, image1_float.cols, PixelType::FLOAT);
+        print_pixels("built-in image1_float", image1_float.data, image1_float.rows, image1_float.cols, PixelType::FLOAT, false);
     }
 
-    double verticalScale = 0.6;
-    double horizontalScale = 0.6;
+    double verticalScale = 0.5;
+    double horizontalScale = 0.5;
 
     int image1_height = image1_uchar.rows;
     int image1_width = image1_uchar.cols;
@@ -389,11 +389,11 @@ int main()
     }
     else
     {
-        print_pixels("image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
-        print_pixels("image2_uchar", image2_uchar.data, image2_uchar.rows, image2_uchar.cols, PixelType::UCHAR);
+        print_pixels("image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR, false);
+        print_pixels("image2_uchar", image2_uchar.data, image2_uchar.rows, image2_uchar.cols, PixelType::UCHAR, false);
 
-        print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
-        print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT);
+        print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT, false);
+        print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT, false);
 
         //print_pixels("image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
         //print_pixels("image2_float", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::FLOAT);
