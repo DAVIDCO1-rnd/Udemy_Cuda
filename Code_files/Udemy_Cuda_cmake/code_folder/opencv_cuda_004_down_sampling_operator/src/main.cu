@@ -7,7 +7,7 @@
 
 
 
-//#define USE_CUDA
+#define USE_CUDA
 //#define USE_X_DIMENSIONS_ONLY
 
 #ifdef USE_CUDA
@@ -29,7 +29,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 
 
-bool read_image_from_file = false;
+bool read_image_from_file = true;
 
 
 #ifndef USE_X_DIMENSIONS_ONLY
@@ -176,8 +176,8 @@ int main()
         print_pixels("built-in image1_float", image1_float.data, image1_float.rows, image1_float.cols, PixelType::FLOAT, false);
     }
 
-    double verticalScale = 0.5;
-    double horizontalScale = 0.5;
+    double verticalScale = 0.3;
+    double horizontalScale = 0.3;
 
     int image1_height = image1_uchar.rows;
     int image1_width = image1_uchar.cols;

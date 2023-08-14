@@ -223,7 +223,7 @@ template<class T> void DownSampleKernel_cpu(
 								int indexSrc = PixelOffset_cpu(y, x, channel, strideSource, pixelSize, channelSize);
 								T pixel_val = *(Pixel_cpu<T>(inputData, indexSrc));
 								float val_to_add = pixel_val * wTop * wBottom * wLeft * wRight;
-								sum += pixel_val;
+								sum += val_to_add;
 							}
 						}
 
