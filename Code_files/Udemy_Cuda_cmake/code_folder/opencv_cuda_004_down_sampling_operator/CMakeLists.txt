@@ -1,8 +1,14 @@
+cmake_minimum_required(VERSION 3.21)
+
 get_filename_component(target_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-set(includes_folder "${CMAKE_CURRENT_SOURCE_DIR}/include")
-set(sources_folder "${CMAKE_CURRENT_SOURCE_DIR}/src")
-file(GLOB HEADERS_FILES "${includes_folder}/*.h" "${includes_folder}/*.hpp" "${includes_folder}/*.hh" "${includes_folder}/*.cuh" "${CUDA_UTILS_FOLDERS}/*.cu" "${CUDA_UTILS_FOLDERS}/*.cuh")
-file(GLOB SOURCES_FILES "${sources_folder}/*.cpp" "${sources_folder}/*.c" "${sources_folder}/*.cu")
+set(include_folder "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(src_folder "${CMAKE_CURRENT_SOURCE_DIR}/src")
+set(cpu_include_folder "${CMAKE_CURRENT_SOURCE_DIR}/include/cpu")
+set(cpu_src_folder "${CMAKE_CURRENT_SOURCE_DIR}/src/cpu")
+file(GLOB INCLUDE_FILES "${include_folder}/*.h" "${include_folder}/*.hpp" "${include_folder}/*.hh" "${include_folder}/*.cuh" "${CUDA_UTILS_FOLDERS}/*.cu" "${CUDA_UTILS_FOLDERS}/*.cuh")
+file(GLOB CPU_INCLUDE_FILES "${cpu_include_folder}/*.h" "${cpu_include_folder}/*.hpp" "${cpu_include_folder}/*.hh" "${cpu_include_folder}/*.cuh")
+file(GLOB SRC_FILES "${src_folder}/*.cpp" "${src_folder}/*.c" "${src_folder}/*.cu")
+file(GLOB CPU_SRC_FILES "${cpu_src_folder}/*.cpp" "${cpu_src_folder}/*.c" "${cpu_src_folder}/*.cu")
 
 
 
@@ -11,8 +17,10 @@ file(GLOB SOURCES_FILES "${sources_folder}/*.cpp" "${sources_folder}/*.c" "${sou
 set(CUDA_TOOLKIT_ROOT_DIR "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2/bin")
 find_package(CUDA 10.2 REQUIRED)
 
-
-add_executable(${target_name} ${SOURCES_FILES} ${CUDA_SOURCES_FILES} ${HEADERS_FILES})
+message(STATUS "INCLUDE_FILES = ${INCLUDE_FILES}")
+# source_group("CPU_SRC" FILES ${CPU_SRC_FILES})
+# source_group("CPU_INCLUDE" FILES ${CPU_INCLUDE_FILES})
+add_executable(${target_name} ${SRC_FILES} ${CPU_SRC_FILES} ${INCLUDE_FILES} ${CPU_INCLUDE_FILES})
 enable_language(CUDA)
 set_target_properties(${target_name} PROPERTIES
     CUDA_STANDARD 11
@@ -23,7 +31,7 @@ set_target_properties(${target_name} PROPERTIES
 if(VIPER_ENABLE_CUDA_PROFILER)
 	target_compile_definitions(${target_name} PRIVATE ENABLE_CUDA_PROFILER=1)
 endif()
-target_include_directories(${target_name} PUBLIC ${includes_folder} ${OpenCV_INCLUDE_Folder} ${CUDA_UTILS_FOLDERS})
+target_include_directories(${target_name} PUBLIC ${include_folder} ${cpu_include_folder} ${OpenCV_INCLUDE_Folder} ${CUDA_UTILS_FOLDERS})
 target_compile_features(${target_name} PUBLIC cxx_std_17)
 
 #add_custom_command(TARGET ${target_name} POST_BUILD COMMAND ${CMAKE_COMMAND} -E copy "${OpenCV_DLL_Folder}/opencv_world430d.dll" "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}")
