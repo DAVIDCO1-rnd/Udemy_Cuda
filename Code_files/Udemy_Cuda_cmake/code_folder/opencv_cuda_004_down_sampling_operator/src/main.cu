@@ -7,7 +7,7 @@
 
 
 
-#define USE_CUDA
+//#define USE_CUDA
 //#define USE_X_DIMENSIONS_ONLY
 
 #ifdef USE_CUDA
