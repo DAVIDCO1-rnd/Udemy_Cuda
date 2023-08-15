@@ -157,19 +157,14 @@ int main()
 
     if (read_image_from_file == false)
     {
-        uchar image_data[height][width] = {
-           {0x00, 0x01, 0x02, 0x03, 0x04},
-           {0x05, 0x06, 0x07, 0x08, 0x09},
-           {0x10, 0x11, 0x12, 0x13, 0x14}
-        };
-        image1_uchar = build_image_from_data(image_data, PixelType::UCHAR);
-        print_pixels("built-in image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
+        image1_uchar = build_image_from_data(PixelType::UCHAR, width, height);
+        print_pixels("built-in image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR, false);
 
-        image1_ushort = build_image_from_data(image_data, PixelType::USHORT);
-        print_pixels("built-in image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
+        image1_ushort = build_image_from_data(PixelType::USHORT, width, height);
+        print_pixels("built-in image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT, false);
 
-        image1_float = build_image_from_data(image_data, PixelType::FLOAT);
-        print_pixels("built-in image1_float", image1_float.data, image1_float.rows, image1_float.cols, PixelType::FLOAT);
+        image1_float = build_image_from_data(PixelType::FLOAT, width, height);
+        print_pixels("built-in image1_float", image1_float.data, image1_float.rows, image1_float.cols, PixelType::FLOAT, false);
     }
 
 
@@ -341,11 +336,12 @@ int main()
     }
     else
     {
-        print_pixels("image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
-        print_pixels("image2_uchar", image2_uchar.data, image2_uchar.rows, image2_uchar.cols, PixelType::UCHAR);
+        bool is_hex = true;
+        print_pixels("image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR, is_hex);
+        print_pixels("image2_uchar", image2_uchar.data, image2_uchar.rows, image2_uchar.cols, PixelType::UCHAR, is_hex);
 
-        print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
-        print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT);
+        print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT, is_hex);
+        print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT, is_hex);
 
         //print_pixels("image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
         //print_pixels("image2_float", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::FLOAT);

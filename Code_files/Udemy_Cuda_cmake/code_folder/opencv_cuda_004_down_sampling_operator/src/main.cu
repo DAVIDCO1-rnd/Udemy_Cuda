@@ -160,19 +160,6 @@ int main()
 
     if (read_image_from_file == false)
     {
-        //uchar image_data[height][width] = {
-        //   {0,  1,  2,  3,  4,  5},
-        //   {6,  7,  8,  9,  10, 11},
-        //   {12, 13, 14, 15, 16, 17},
-        //   {18, 19, 20, 21, 22, 23}
-        //};
-
-        //uchar image_data[height][width] = {
-        //   {0,  1,  2,  3,  4},
-        //   {6,  7,  8,  9,  10},
-        //   {12, 13, 14, 15, 16}
-        //};
-
         image1_uchar = build_image_from_data(PixelType::UCHAR, width, height);
         print_pixels("built-in image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR, false);
 
