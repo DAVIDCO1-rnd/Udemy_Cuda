@@ -31,7 +31,7 @@ template<class T> void InvertImageKernel_cpu(unsigned char* inputData, unsigned 
 						int column = 0;
 						int channel = 0;
 						if (!DecodeYXC_cpu(&row, &column, &channel, widthImage, heightImage, thread_Idx_x, thread_Idx_y, thread_Idx_z, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-							return;
+							break;
 
 						int indexDst = PixelOffset_cpu(row, column, channel, strideResultImage, pixelSize, channelSize);
 						int indexSrc = PixelOffset_cpu(row, column, channel, strideSourceImage, pixelSize, channelSize);

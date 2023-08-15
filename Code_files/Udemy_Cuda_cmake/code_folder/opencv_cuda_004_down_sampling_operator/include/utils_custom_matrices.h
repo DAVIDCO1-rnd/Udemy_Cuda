@@ -3,8 +3,8 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/opencv.hpp>
 
-const int height = 10;
-const int width = 8;
+const int height = 20;
+const int width = 15;
 
 enum class PixelType {
     UCHAR = 1,

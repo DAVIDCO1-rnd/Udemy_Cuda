@@ -7,7 +7,7 @@
 
 
 
-//#define USE_CUDA
+#define USE_CUDA
 //#define USE_X_DIMENSIONS_ONLY
 
 #ifdef USE_CUDA
@@ -29,7 +29,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 
 
-bool read_image_from_file = false;
+bool read_image_from_file = true;
 
 
 #ifndef USE_X_DIMENSIONS_ONLY
@@ -303,20 +303,13 @@ int main()
         threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
         blocksPerGrid.x, blocksPerGrid.y);
 
-    //__wchar_t* DownSample_status2 = DownSample(device_inputData2, device_outputData2,
-    //    input_image_width, input_image_height, ushort_strideSourceImage,
-    //    output_image_width, output_image_height, ushort_strideResultImage,
-    //    horizontalScale, verticalScale,
-    //    ushort_pixel_size, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
-    //    threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
-    //    blocksPerGrid.x, blocksPerGrid.y);
-    
-
-    //__wchar_t* Inverse_status2 = Inverse(device_inputData2, device_outputData2,
-    //    ushort_subPixelType, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
-    //    input_image_width, input_image_height, ushort_strideSourceImage, ushort_strideResultImage,
-    //    threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
-    //    blocksPerGrid.x, blocksPerGrid.y);
+    __wchar_t* DownSample_status2 = DownSample(device_inputData2, device_outputData2,
+        input_image_width, input_image_height, ushort_strideSourceImage,
+        output_image_width, output_image_height, ushort_strideResultImage,
+        horizontalScale, verticalScale,
+        ushort_pixel_size, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
+        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
+        blocksPerGrid.x, blocksPerGrid.y);
 
     // Check for any errors launching the kernel
     HANDLE_ERROR(cudaGetLastError());
@@ -333,7 +326,7 @@ int main()
     // Copy output vector from GPU buffer to host memory.
     unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
     HANDLE_ERROR(cudaMemcpy(outputData2, device_outputData2, device_outputData_num_of_bytes2, cudaMemcpyDeviceToHost));
-    //image2_ushort.data = outputData2;
+    image2_ushort.data = outputData2;
 
     HANDLE_ERROR(cudaFree(device_inputData1));
     HANDLE_ERROR(cudaFree(device_inputData2));

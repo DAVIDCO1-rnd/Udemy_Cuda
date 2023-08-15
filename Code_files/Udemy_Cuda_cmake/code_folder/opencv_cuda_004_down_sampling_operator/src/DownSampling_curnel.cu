@@ -8,7 +8,7 @@
 #include "cutil_math.h"
 #include <stdio.h>
 
-#define PRINT_IN_CUDA_KERNEL
+//#define PRINT_IN_CUDA_KERNEL
 
 #define LIMITWEIGHT(x) (x) //( ((x)>=0.0f) ? ( ((x)<=1.0f) ? (x) : 0.0f ) : 0.0f )
 

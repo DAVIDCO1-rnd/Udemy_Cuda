@@ -74,26 +74,6 @@ template<class T> void rotate_90_kernel_cpu(unsigned char* inputData, unsigned c
                             *((T*)(outputData + current_index_input_data)) = pixel_value;
                         }
 #endif //USE_X_DIMENSIONS_ONLY
-
-						//int row = 0;
-						//int column = 0;
-						//int channel = 0;
-						//if (!DecodeYXC_cpu(&row, &column, &channel, widthImage, heightImage, thread_Idx_x, thread_Idx_y, thread_Idx_z, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-						//	return;
-
-						//int indexDst = PixelOffset_cpu(row, column, channel, strideResultImage, pixelSize, channelSize);
-						//int indexSrc = PixelOffset_cpu(row, column, channel, strideSourceImage, pixelSize, channelSize);
-
-						//T current_val = *(Pixel_cpu<T>(inputData, indexSrc));
-						//if (channel != alphaChannelNum) // Not alpha channel
-						//{	
-						//	T new_val = white - current_val;
-						//	*(Pixel_cpu<T>(outputData, indexDst)) = new_val; // Inverse
-						//}
-						//else // Alpha Channel
-						//{
-						//	*(Pixel_cpu<T>(outputData, indexDst)) = current_val; // Copy 
-						//}
 					}
 				}
 			}

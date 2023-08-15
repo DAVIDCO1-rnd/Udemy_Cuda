@@ -168,12 +168,7 @@ template<class T> void DownSampleKernel_cpu(
 						int destX = 0;
 						int channel = 0;
 						if (!DecodeYXC_cpu(&destY, &destX, &channel, destWidth, destHeight, thread_Idx_x, thread_Idx_y, thread_Idx_z, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-							return;
-
-						if (destX == ((int)(0.25 * destWidth)) && destY == ((int)(0.35 * destHeight)))
-						{
-							int david = 5;
-						}
+							break;
 
 						// Calculate source's center
 						// Calculate target's center
