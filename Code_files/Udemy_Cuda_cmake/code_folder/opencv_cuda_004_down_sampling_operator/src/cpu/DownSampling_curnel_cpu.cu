@@ -41,7 +41,7 @@ template<class T> void DownSampleTopLeftKernel_cpu(
 						int destX = 0;
 						int channel = 0;
 						if (!DecodeYXC_cpu(&destY, &destX, &channel, destWidth, destHeight, thread_Idx_x, thread_Idx_y, thread_Idx_z, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-							return;
+							break;
 
 						// Calculate source's center
 						// Calculate target's center
@@ -102,7 +102,7 @@ template<class T> void DownSampleTopLeftKernelFloat_cpu(
 						int destX = 0;
 						int channel = 0;
 						if (!DecodeYXC_cpu(&destY, &destX, &channel, destWidth, destHeight, thread_Idx_x, thread_Idx_y, thread_Idx_z, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-							return;
+							break;
 
 						// Calculate source's center
 						// Calculate target's center
@@ -260,7 +260,7 @@ template<class T> void DownSampleKernelFloat_cpu(
 						int destX = 0;
 						int channel = 0;
 						if (!DecodeYXC_cpu(&destY, &destX, &channel, destWidth, destHeight, thread_Idx_x, thread_Idx_y, thread_Idx_z, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-							return;
+							break;
 
 						// Calculate source's center
 						// Calculate target's center
@@ -349,7 +349,7 @@ void FastDownSampleKernel_cpu(unsigned char* inputData, unsigned char* outputDat
 					int rowSrc = 0;
 					int columnSrc = 0;
 					if (!DecodeYX_cpu(&rowSrc, &columnSrc, sourceWidth, sourceHeight, thread_Idx_x, thread_Idx_y, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-						return;
+						break;
 
 					int indexSrc = PixelOffset_cpu(rowSrc, columnSrc, 0, strideSource, channelSizeSource * channels, channelSizeSource);
 
@@ -438,7 +438,7 @@ void FastDownSampleVerticalKernel_cpu(unsigned char* inputData, unsigned char* o
 					int rowSrc = 0;
 					int columnSrc = 0;
 					if (!DecodeYX_cpu(&rowSrc, &columnSrc, sourceWidth, sourceHeight, thread_Idx_x, thread_Idx_y, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-						return;
+						break;
 
 					int indexSrc = PixelOffset_cpu(rowSrc, columnSrc, 0, strideSource, channelSizeSource * channels, channelSizeSource);
 
@@ -502,7 +502,7 @@ void FastDownSampleHorizontalKernel_cpu(unsigned char* inputData, unsigned char*
 					int rowSrc = 0;
 					int columnSrc = 0;
 					if (!DecodeYX_cpu(&rowSrc, &columnSrc, sourceWidth, sourceHeight, thread_Idx_x, thread_Idx_y, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-						return;
+						break;
 
 					int indexSrc = PixelOffset_cpu(rowSrc, columnSrc, 0, strideSource, channelSizeSource * channels, channelSizeSource);
 

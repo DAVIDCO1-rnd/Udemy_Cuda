@@ -31,7 +31,7 @@ void ConvertFromInteger_cpu(unsigned char* inputData,
 					int row = 0;
 					int column = 0;
 					if (!DecodeYX_cpu(&row, &column, widthImage, heightImage, thread_Idx_x, thread_Idx_y, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-						return;
+						break;
 
 					float4 value;
 					int index = PixelOffset_cpu(row, column, 0, strideSourceImage, GRAYFLOAT_SIZE * numOfChannels, GRAYFLOAT_SIZE);
@@ -84,7 +84,7 @@ void ConvertFromIntegerToFloat_cpu(unsigned char* data, float convertValue,
 					int row = 0;
 					int column = 0;
 					if (!DecodeYX_cpu(&row, &column, widthImage, heightImage, thread_Idx_x, thread_Idx_y, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-						return;
+						break;
 
 					float4 value;
 					int index = PixelOffset_cpu(row, column, 0, strideImage, GRAYFLOAT_SIZE * numOfChannels, GRAYFLOAT_SIZE);
@@ -138,7 +138,7 @@ void ConvertFromIntegerToFloat_cpu(unsigned char* inputData,
 					int row = 0;
 					int column = 0;
 					if (!DecodeYX_cpu(&row, &column, widthImage, heightImage, thread_Idx_x, thread_Idx_y, block_Idx_x, block_Idx_y, block_Dim_x, block_Dim_y))
-						return;
+						break;
 
 					float4 value;
 					int index = PixelOffset_cpu(row, column, 0, strideSourceImage, GRAYFLOAT_SIZE * numOfChannels, GRAYFLOAT_SIZE);
