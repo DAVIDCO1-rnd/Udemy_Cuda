@@ -76,40 +76,41 @@ void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimensi
     print_pixels_2D(matrix_name, pixelData, dimension1, dimension2, pixel_type, is_hex);
 }
 
-cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
+cv::Mat build_image_from_data(PixelType pixel_type, int width, int height)
 {
     cv::Mat image;
+    uchar uchar_current_val = 0;
+    ushort ushort_current_val = 0;
+    float float_current_val = 0.0f;
+
     switch (pixel_type)
     {
-    case PixelType::UCHAR:
-        image = cv::Mat(height, width, CV_8UC1);
+    case PixelType::UCHAR:        
+        image = cv::Mat(height, width, CV_8UC1);        
         for (int y = 0; y < image.rows; ++y) {
             for (int x = 0; x < image.cols; ++x) {
-                image.at<uchar>(y, x) = static_cast<uchar>(image_data[y][x]);
+                image.at<uchar>(y, x) = uchar_current_val;
+                uchar_current_val++;
             }
         }
         break;
 
-    case PixelType::USHORT:
-        image = cv::Mat(height, width, CV_16UC1);
+    case PixelType::USHORT:        
+        image = cv::Mat(height, width, CV_16UC1);        
         for (int y = 0; y < image.rows; ++y) {
             for (int x = 0; x < image.cols; ++x) {
-                uchar current_val = image_data[y][x];
-                ushort current_val_ushort = (ushort)current_val;
-                ushort new_val = 0xFF00 + current_val_ushort;
-                image.at<ushort>(y, x) = new_val;
+                image.at<ushort>(y, x) = ushort_current_val;
+                ushort_current_val++;
             }
         }
         break;
 
     case PixelType::FLOAT:
-        image = cv::Mat(height, width, CV_32FC1);
+        image = cv::Mat(height, width, CV_32FC1);        
         for (int y = 0; y < image.rows; ++y) {
             for (int x = 0; x < image.cols; ++x) {
-                uchar current_val = image_data[y][x];
-                float current_val_float = (float)current_val;
-                float new_val = 1.0 * current_val_float;
-                image.at<float>(y, x) = new_val;
+                image.at<float>(y, x) = float_current_val;
+                float_current_val++;
             }
         }
         break;

@@ -8,7 +8,7 @@
 #include "cutil_math.h"
 #include <stdio.h>
 
-//#define PRINT_IN_CUDA_KERNEL
+#define PRINT_IN_CUDA_KERNEL
 
 #define LIMITWEIGHT(x) (x) //( ((x)>=0.0f) ? ( ((x)<=1.0f) ? (x) : 0.0f ) : 0.0f )
 
@@ -137,10 +137,10 @@ template<class T> __global__ void DownSampleKernel(
 	int yMaxLimit = MIN(sourceHeight - 1, ceil(yMaxRange - 0.5f));
 	
 #ifdef PRINT_IN_CUDA_KERNEL
-	printf("cuda kernel: destY = %d, destX = %d, xMinLimit = %d\n", xMinLimit, destY, destX);
-	printf("cuda kernel: destY = %d, destX = %d, xMaxLimit = %d\n", xMaxLimit, destY, destX);
-	printf("cuda kernel: destY = %d, destX = %d, yMinLimit = %d\n", yMinLimit, destY, destX);
-	printf("cuda kernel: destY = %d, destX = %d, yMaxLimit = %d\n", yMaxLimit, destY, destX);
+	printf("cuda kernel: destY = %d, destX = %d, xMinLimit = %d\n", destY, destX, xMinLimit);
+	printf("cuda kernel: destY = %d, destX = %d, xMaxLimit = %d\n", destY, destX, xMaxLimit);
+	printf("cuda kernel: destY = %d, destX = %d, yMinLimit = %d\n", destY, destX, yMinLimit);
+	printf("cuda kernel: destY = %d, destX = %d, yMaxLimit = %d\n", destY, destX, yMaxLimit);
 	printf("\n");
 #endif //PRINT_IN_CUDA_KERNEL
 	
@@ -160,15 +160,36 @@ template<class T> __global__ void DownSampleKernel(
 			int indexSrc = PixelOffset(y, x, channel, strideSource, pixelSize, channelSize);
 			T pixel_val = *(Pixel<T>(inputData, indexSrc));
 			float value_to_add = pixel_val * wTop * wBottom * wLeft * wRight;
+
+#ifdef PRINT_IN_CUDA_KERNEL
+			printf("cuda kernel: destY = %d, destX = %d, y = %d, x = %d, indexSrc = %d\n", destY, destX, y, x, indexSrc);
+			printf("cuda kernel: destY = %d, destX = %d, y = %d, x = %d, pixel_val = %d\n", destY, destX, y, x, pixel_val);
+			printf("cuda kernel: destY = %d, destX = %d, y = %d, x = %d, wTop = %f\n", destY, destX, y, x, wTop);
+			printf("cuda kernel: destY = %d, destX = %d, y = %d, x = %d, wBottom = %f\n", destY, destX, y, x, wBottom);
+			printf("cuda kernel: destY = %d, destX = %d, y = %d, x = %d, wLeft = %f\n", destY, destX, y, x, wLeft);
+			printf("cuda kernel: destY = %d, destX = %d, y = %d, x = %d, wRight = %f\n", destY, destX, y, x, wRight);
+			printf("cuda kernel: destY = %d, destX = %d, y = %d, x = %d, value_to_add = %f\n", destY, destX, y, x, value_to_add);
+			printf("\n");
+#endif //PRINT_IN_CUDA_KERNEL
+
 			sum += value_to_add;
 		}
 	}
 
-	sum /= (horizontalScale * verticalScale);
+	float average_pixel = sum / (horizontalScale * verticalScale);
 	
 
 	int indexDst = PixelOffset(destY, destX, channel, strideDest, pixelSize, channelSize);
-	*(Pixel<T>(outputData, indexDst)) = RoundAndLimitResult<T>(sum, white); 
+	T rounded_val = RoundAndLimitResult<T>(average_pixel, white);
+
+#ifdef PRINT_IN_CUDA_KERNEL
+	printf("cuda kernel: destY = %d, destX = %d, sum = %f\n", destY, destX, sum);
+	printf("cuda kernel: destY = %d, destX = %d, average_pixel = %f\n", destY, destX, average_pixel);
+	printf("cuda kernel: destY = %d, destX = %d, indexDst = %d\n", destY, destX, indexDst);
+	printf("cuda kernel: destY = %d, destX = %d, rounded_val = %d\n", destY, destX, rounded_val);
+	printf("\n");
+#endif //PRINT_IN_CUDA_KERNEL
+	*(Pixel<T>(outputData, indexDst)) = rounded_val;
 }
 
 template<class T> __global__ void DownSampleKernelFloat(

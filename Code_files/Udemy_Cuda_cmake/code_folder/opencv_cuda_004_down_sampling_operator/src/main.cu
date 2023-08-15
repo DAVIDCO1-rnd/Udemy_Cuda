@@ -7,7 +7,7 @@
 
 
 
-#define USE_CUDA
+//#define USE_CUDA
 //#define USE_X_DIMENSIONS_ONLY
 
 #ifdef USE_CUDA
@@ -160,19 +160,26 @@ int main()
 
     if (read_image_from_file == false)
     {
-        uchar image_data[height][width] = {
-           {0,  1,  2,  3,  4,  5},
-           {6,  7,  8,  9,  10, 11},
-           {12, 13, 14, 15, 16, 17},
-           {18, 19, 20, 21, 22, 23}
-        };
-        image1_uchar = build_image_from_data(image_data, PixelType::UCHAR);
+        //uchar image_data[height][width] = {
+        //   {0,  1,  2,  3,  4,  5},
+        //   {6,  7,  8,  9,  10, 11},
+        //   {12, 13, 14, 15, 16, 17},
+        //   {18, 19, 20, 21, 22, 23}
+        //};
+
+        //uchar image_data[height][width] = {
+        //   {0,  1,  2,  3,  4},
+        //   {6,  7,  8,  9,  10},
+        //   {12, 13, 14, 15, 16}
+        //};
+
+        image1_uchar = build_image_from_data(PixelType::UCHAR, width, height);
         print_pixels("built-in image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR, false);
 
-        image1_ushort = build_image_from_data(image_data, PixelType::USHORT);
+        image1_ushort = build_image_from_data(PixelType::USHORT, width, height);
         print_pixels("built-in image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT, false);
 
-        image1_float = build_image_from_data(image_data, PixelType::FLOAT);
+        image1_float = build_image_from_data(PixelType::FLOAT, width, height);
         print_pixels("built-in image1_float", image1_float.data, image1_float.rows, image1_float.cols, PixelType::FLOAT, false);
     }
 
@@ -296,13 +303,13 @@ int main()
         threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
         blocksPerGrid.x, blocksPerGrid.y);
 
-    __wchar_t* DownSample_status2 = DownSample(device_inputData2, device_outputData2,
-        input_image_width, input_image_height, ushort_strideSourceImage,
-        output_image_width, output_image_height, ushort_strideResultImage,
-        horizontalScale, verticalScale,
-        ushort_pixel_size, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
-        threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
-        blocksPerGrid.x, blocksPerGrid.y);
+    //__wchar_t* DownSample_status2 = DownSample(device_inputData2, device_outputData2,
+    //    input_image_width, input_image_height, ushort_strideSourceImage,
+    //    output_image_width, output_image_height, ushort_strideResultImage,
+    //    horizontalScale, verticalScale,
+    //    ushort_pixel_size, max_val_ushort, alphaChannelNum, ushort_pixel_size, ushort_channelSize,
+    //    threadsPerBlock.x, threadsPerBlock.y, threadsPerBlock.z,
+    //    blocksPerGrid.x, blocksPerGrid.y);
     
 
     //__wchar_t* Inverse_status2 = Inverse(device_inputData2, device_outputData2,
@@ -326,7 +333,7 @@ int main()
     // Copy output vector from GPU buffer to host memory.
     unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
     HANDLE_ERROR(cudaMemcpy(outputData2, device_outputData2, device_outputData_num_of_bytes2, cudaMemcpyDeviceToHost));
-    image2_ushort.data = outputData2;
+    //image2_ushort.data = outputData2;
 
     HANDLE_ERROR(cudaFree(device_inputData1));
     HANDLE_ERROR(cudaFree(device_inputData2));
@@ -392,8 +399,8 @@ int main()
         print_pixels("image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR, false);
         print_pixels("image2_uchar", image2_uchar.data, image2_uchar.rows, image2_uchar.cols, PixelType::UCHAR, false);
 
-        print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT, false);
-        print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT, false);
+        //print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT, false);
+        //print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT, false);
 
         //print_pixels("image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
         //print_pixels("image2_float", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::FLOAT);
