@@ -29,7 +29,7 @@ static void HandleError(cudaError_t err, const char* file, int line) {
 #define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
 
 
-bool read_image_from_file = true;
+bool read_image_from_file = false;
 
 
 #ifndef USE_X_DIMENSIONS_ONLY
@@ -183,8 +183,8 @@ int main()
         print_pixels("built-in image1_float", image1_float.data, image1_float.rows, image1_float.cols, PixelType::FLOAT, false);
     }
 
-    double verticalScale = 0.3;
-    double horizontalScale = 0.3;
+    double verticalScale = 0.7;
+    double horizontalScale = 0.7;
 
     int image1_height = image1_uchar.rows;
     int image1_width = image1_uchar.cols;
