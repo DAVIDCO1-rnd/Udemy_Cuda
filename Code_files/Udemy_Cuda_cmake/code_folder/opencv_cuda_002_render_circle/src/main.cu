@@ -6,20 +6,12 @@
 #include <iostream>
 #include <stdio.h>
 #include <cmath>
-
-#define USE_CUDA
-
-#ifdef USE_CUDA
 #include "cuda_runtime.h"
 #include "device_launch_parameters.h"
-static void HandleError(cudaError_t err, const char* file, int line) {
-    if (err != cudaSuccess) {
-        printf("%s in %s at line %d\n", cudaGetErrorString(err), file, line);
-        exit(EXIT_FAILURE);
-    }
-}
-#define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
-#endif //USE_CUDA
+#include "cuda_utils.cuh"
+#include "opencv_utils.h"
+
+#define USE_CUDA
 
 bool read_image_from_file = true;
 const int height = 3;
@@ -118,10 +110,8 @@ __device__  inline bool DecodeYXC(int* y, int* x, int* c, int widthImage, int he
     return (*y >= 0 && *y < heightImage&&* x >= 0 && *x < widthImage);
 }
 
-template<class T> __global__ void render_circle_cuda(unsigned char* device_inputData, unsigned char* device_outputData, int* device_input_width, int* device_input_height, int* device_pixel_size, int is_clockwise, T max_val)
+template<class T> __global__ void render_circle_cuda(unsigned char* inputData, unsigned char* outputData, int* device_input_width, int* device_input_height, int* device_pixel_size, int ticks)
 {
-
-
     int input_width = device_input_width[0];
     int input_height = device_input_height[0];
     int output_width = input_height;
@@ -138,56 +128,23 @@ template<class T> __global__ void render_circle_cuda(unsigned char* device_input
 
     if (x < input_width && y < input_height)
     {
-        unsigned char val = 0;
-        *((T*)(device_outputData + current_index_input_data)) = (T)val;
-        if (distance_from_center_of_image < 120)
-        {
-            *((T*)(device_outputData + current_index_input_data)) = max_val;
-        }
+        int current_index_input_data = pixel_size * (x * input_height + y);
+
+        float fx = x - input_width / 2;
+        float fy = y - input_height / 2;
+        float d = sqrtf(fx * fx + fy * fy);
+        unsigned char grey = (unsigned char)(128.0f + 127.0f *
+            cos(d / 10.0f - ticks / 7.0f) /
+            (d / 10.0f + 1.0f));
+
+        unsigned char pixel_value = grey;
+        *((T*)(outputData + current_index_input_data)) = (T)pixel_value;
     }
-
-
-
-    //int x = threadIdx.x;
-    //while (x < input_width)
-    //{
-    //    int y = blockIdx.x;
-    //    while (y < input_height)
-    //    {
-    //        int current_index_input_data = pixel_size * (x * input_height + y);
-    //        int current_index_output_data;
-    //        if (is_clockwise == 1)
-    //        {
-    //            current_index_output_data = pixel_size * ((input_height - y - 1) * input_width + x); //Clockwise
-    //        }
-    //        else
-    //        {
-    //            current_index_output_data = pixel_size * (y * input_width + input_width - 1 - x); //CounterClockwise
-    //        }
-    //        T pixel_value = 0;
-
-    //        float fx = x - input_width / 2;
-    //        float fy = y - input_height / 2;
-    //        float distance_from_center_of_image = sqrtf(fx * fx + fy * fy);
-
-    //        *((T*)(device_outputData + current_index_input_data)) = 0;
-    //        if (distance_from_center_of_image < 120)
-    //        {
-    //            unsigned char pixel_value = 255;
-    //            *((T*)(device_outputData + current_index_input_data)) = (T)pixel_value;
-    //        }
-
-
-    //        //*((T*)(device_outputData + current_index_input_data)) = pixel_value;
-    //        y += gridDim.x;
-    //    }
-    //    x += blockDim.x;
-    //}
 }
 #endif //USE_CUDA
 
 template <class T>
-void render_circle_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, int pixel_size, int direction_of_rotation)
+void render_circle_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, int pixel_size, int ticks)
 {
     int output_width = input_height;
     int output_height = input_width;
@@ -199,38 +156,19 @@ void render_circle_cpu(unsigned char* inputData, unsigned char* outputData, int 
         while (j < input_height)
         {
             int current_index_input_data = pixel_size * (i * input_height + j);
-            int current_index_output_data;
-
-            if (direction_of_rotation == 0) //Clockwise
-            {
-                current_index_output_data = pixel_size * ((input_height - j - 1) * input_width + i);
-            }
-            else //CounterClockwise
-            {
-                current_index_output_data = pixel_size * (j * input_width + input_width - 1 - i);
-            }
-            T pixel_value = 0;
 
             float fx = i - input_width / 2;
             float fy = j - input_height / 2;
-            float distance_from_center_of_image = sqrtf(fx * fx + fy * fy);
+            float d = sqrtf(fx * fx + fy * fy);
+            unsigned char grey = (unsigned char)(128.0f + 127.0f *
+                cos(d / 10.0f - ticks / 7.0f) /
+                (d / 10.0f + 1.0f));
 
-            *((T*)(outputData + current_index_input_data)) = 0;
-            if (distance_from_center_of_image < 120)
-            {
-                unsigned char pixel_value = 255;
-                *((T*)(outputData + current_index_input_data)) = (T)pixel_value;
-            }
+            unsigned char pixel_value = grey;
+            *((T*)(outputData + current_index_input_data)) = (T)pixel_value;
+
             
-            if (read_image_from_file == false)
-            {
-                printf("%d, ", current_index_output_data);
-            } 
             j++;
-        }
-        if (read_image_from_file == false)
-        {
-            printf("\n");
         }
         i++;
     }
@@ -290,155 +228,14 @@ cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
     return image;
 }
 
-#ifdef USE_CUDA
-class BlockAndGridDimensions {
-private:
-    int gridSizes[2];
-    int blockSizes[3];
 
-public:
-    BlockAndGridDimensions(int block_sizes[3], int grid_sizes[2]) {
-        for (int i = 0; i < 2; ++i) {
-            gridSizes[i] = grid_sizes[i];
-        }
-
-        for (int i = 0; i < 3; ++i) {
-            blockSizes[i] = block_sizes[i];
-        }
-    }
-};
-
-//c++ code:
-BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width, int height)
-{
-    cudaDeviceProp  prop;
-    int device_index = 0; //For now I assume there's only one GPu device
-    HANDLE_ERROR(cudaGetDeviceProperties(&prop, device_index));
-    int maxThreadsPerBlock = prop.maxThreadsPerBlock;
-    int maxBlockSize = maxThreadsPerBlock / 2;
-
-    int blockSize[3];
-    int gridSize[2];
-
-    // Calculate optimal block size, depends on the number of channels in picture
-    if (width * height * channels < maxBlockSize)
-    {
-        blockSize[0] = width;
-        blockSize[1] = height;
-    }
-    else
-    {
-        int warpSize = prop.warpSize;
-        float dWarp = warpSize / (float)channels;
-        int maxSize = (int)(maxBlockSize / (float)channels);
-
-        if (width <= maxSize)
-            blockSize[0] = width;
-        else
-        {
-            float threadsX = 0.0f;
-            while (threadsX < maxSize)
-            {
-                threadsX += dWarp;
-
-            }
-            blockSize[0] = (int)threadsX;
-        }
-        blockSize[1] = maxSize / blockSize[0];
-        if (blockSize[1] == 0)
-        {
-            blockSize[1] = 1;
-        }
-    }
-
-    //block size 3rd dimension is always the number of channels.
-    blockSize[2] = channels;
-
-    //calculate grid size. (number of necessary blocks to cover the whole picture) 
-    gridSize[0] = (int)ceil((double)width / blockSize[0]);
-    gridSize[1] = (int)ceil((double)height / blockSize[1]);
-
-    BlockAndGridDimensions* block_and_grid_dimensions = new BlockAndGridDimensions(blockSize, gridSize);
-    return block_and_grid_dimensions;
-
-    //return new BlockAndGridDimensions(
-    //    blockSize,
-    //    gridSize
-    //);
-}
-
-//c# code:
-//public static BlockAndGridDimensions CalculateBlockAndGridDimensions(int channels, int width, int height)
-//{
-//
-//    var maxBlockSize = DeviceProperties.deviceThreadsPerBlock / 2;
-//
-//
-//    var blockSize = new int[3];
-//    var gridSize = new int[2];
-//
-//    // Calculate optimal block size, depends on the number of channels in picture
-//    if (width * height * channels < maxBlockSize)
-//    {
-//        blockSize[0] = width;
-//        blockSize[1] = height;
-//    }
-//    else
-//    {
-//        var dWarp = DeviceProperties.deviceWarpSize / (float)channels;
-//        var maxSize = (int)(maxBlockSize / (float)channels);
-//
-//        if (width <= maxSize)
-//            blockSize[0] = width;
-//        else
-//        {
-//            var threadsX = 0.0f;
-//            while (threadsX < maxSize)
-//            {
-//                threadsX += dWarp;
-//
-//            }
-//            blockSize[0] = (int)threadsX;
-//        }
-//        blockSize[1] = maxSize / blockSize[0];
-//        if (blockSize[1] == 0)
-//        {
-//            blockSize[1] = 1;
-//        }
-//    }
-//
-//    //block size 3rd dimension is always the number of channels.
-//    blockSize[2] = channels;
-//
-//    //calculate grid size. (number of necessary blocks to cover the whole picture) 
-//    gridSize[0] = (int)Math.Ceiling((double)width / blockSize[0]);
-//    gridSize[1] = (int)Math.Ceiling((double)height / blockSize[1]);
-//
-//    return new BlockAndGridDimensions(
-//        blockSize,
-//        gridSize
-//    );
-//}
-#endif //USE_CUDA
-
-cv::Mat calc_resized_image(cv::Mat image, double scale_factor)
-{
-
-// Calculate the new dimensions based on the scale factor
-    int newWidth = static_cast<int>(image.cols * scale_factor);
-    int newHeight = static_cast<int>(image.rows * scale_factor);
-
-    // Create a new image with the scaled dimensions
-    cv::Mat scaledImage;
-
-    // Resize the image using the resize function
-    cv::resize(image, scaledImage, cv::Size(newWidth, newHeight), cv::INTER_LINEAR);
-
-    return scaledImage;
-}
 
 int main()
 {
+    int ticks = 0;
+    int num_of_frames = 1000;
+    int width = 2560;
+    int height = 2048;
     //going back from this folder: ./build/code_folder/Section3.3_spotlights/
     std::string image_path = "../../../images/balloons.jpg";
     cv::Mat image1_uchar;
@@ -449,7 +246,7 @@ int main()
         //cv::Mat rgb_image1 = cv::imread(image_path);        
         //cv::cvtColor(rgb_image1, image1_uchar, cv::COLOR_BGR2GRAY);
 
-        image1_uchar = cv::Mat(1280, 720, CV_8UC1, cv::Scalar(0));
+        image1_uchar = cv::Mat(width, height, CV_8UC1, cv::Scalar(0));
 
         //cv::vconcat(image1_uchar, image1_uchar, image1_uchar);
         if (image1_uchar.empty())
@@ -462,208 +259,185 @@ int main()
     }
 
 
-    if (read_image_from_file == false)
-    {
-        //uchar image_data[height][width] = {
-        //   {0x05, 0x10, 0x15, 0x20, 0x25, 0x30},
-        //   {0x35, 0x40, 0x45, 0x50, 0x55, 0x60},
-        //   {0x65, 0x70, 0x75, 0x80, 0x85, 0x90}
-        //};
-
-        uchar image_data[height][width] = {
-           {0x00, 0x01, 0x02, 0x03, 0x04},
-           {0x05, 0x06, 0x07, 0x08, 0x09},
-           {0x10, 0x11, 0x12, 0x13, 0x14}
-        };
-        image1_uchar = build_image_from_data(image_data, PixelType::UCHAR);        
-        print_pixels("built-in image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
-
-        image1_ushort = build_image_from_data(image_data, PixelType::USHORT);
-        print_pixels("built-in image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
-
-        image1_float = build_image_from_data(image_data, PixelType::FLOAT);
-        print_pixels("built-in image1_float", image1_float.data, image1_float.rows, image1_float.cols, PixelType::FLOAT);
-    }
-
-
 
     cv::Mat image2_uchar(image1_uchar.cols, image1_uchar.rows, CV_8UC1);
     cv::Mat image2_ushort(image1_ushort.cols, image1_ushort.rows, CV_16UC1);
     cv::Mat image2_float(image1_float.cols, image1_float.rows, CV_32FC1);
 
-
-
-    DirectionOfRotation direction_of_rotation = DirectionOfRotation::Clockwise;
+    for (int i = 0; i < num_of_frames; i++)
+    {
+        ticks = ticks + 1;
 #ifndef USE_CUDA
-    render_circle_cpu<unsigned char>(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, (int)PixelType::UCHAR, (int)direction_of_rotation);
-
-    render_circle_cpu<unsigned short>(image1_ushort.data, image2_ushort.data, image1_ushort.cols, image1_ushort.rows, (int)PixelType::USHORT, (int)direction_of_rotation);
-
-    render_circle_cpu<float>(image1_float.data, image2_float.data, image1_float.cols, image1_float.rows, (int)PixelType::FLOAT, (int)direction_of_rotation);
+        render_circle_cpu<unsigned char>(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, (int)PixelType::UCHAR, ticks);
 #endif
 
 #ifdef USE_CUDA
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //create device_inputData1
-    unsigned char* device_inputData1 = NULL;
-    size_t device_inputData_bytes1 = sizeof(unsigned char) * image1_uchar.rows * image1_uchar.cols;
-    HANDLE_ERROR(cudaMalloc((void**)&device_inputData1, device_inputData_bytes1));
-    HANDLE_ERROR(cudaMemcpy(device_inputData1, image1_uchar.data, device_inputData_bytes1, cudaMemcpyHostToDevice));
-
-
-    //create device_inputData2
-    unsigned char* device_inputData2 = NULL;
-    size_t device_inputData_bytes2 = sizeof(unsigned short) * image1_ushort.rows * image1_ushort.cols;
-    HANDLE_ERROR(cudaMalloc((void**)&device_inputData2, device_inputData_bytes2));
-
-    // Copy input vectors from host memory to GPU buffers.
-    HANDLE_ERROR(cudaMemcpy(device_inputData2, image1_ushort.data, device_inputData_bytes2, cudaMemcpyHostToDevice));
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    unsigned char* device_outputData1 = NULL;
-    unsigned char* device_outputData2 = NULL;
-    unsigned int device_outputData_num_of_elements = image1_uchar.rows * image1_uchar.cols;
-    size_t device_outputData_num_of_bytes1 = device_outputData_num_of_elements * sizeof(unsigned char);
-    HANDLE_ERROR(cudaMalloc((void**)&device_outputData1, device_outputData_num_of_bytes1));
-
-    size_t device_outputData_num_of_bytes2 = device_outputData_num_of_elements * sizeof(unsigned short);
-    HANDLE_ERROR(cudaMalloc((void**)&device_outputData2, device_outputData_num_of_bytes2));
+        //create device_inputData1
+        unsigned char* device_inputData1 = NULL;
+        size_t device_inputData_bytes1 = sizeof(unsigned char) * image1_uchar.rows * image1_uchar.cols;
+        HANDLE_ERROR(cudaMalloc((void**)&device_inputData1, device_inputData_bytes1));
+        HANDLE_ERROR(cudaMemcpy(device_inputData1, image1_uchar.data, device_inputData_bytes1, cudaMemcpyHostToDevice));
 
 
+        //create device_inputData2
+        unsigned char* device_inputData2 = NULL;
+        size_t device_inputData_bytes2 = sizeof(unsigned short) * image1_ushort.rows * image1_ushort.cols;
+        HANDLE_ERROR(cudaMalloc((void**)&device_inputData2, device_inputData_bytes2));
+
+        // Copy input vectors from host memory to GPU buffers.
+        HANDLE_ERROR(cudaMemcpy(device_inputData2, image1_ushort.data, device_inputData_bytes2, cudaMemcpyHostToDevice));
+
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        unsigned char* device_outputData1 = NULL;
+        unsigned char* device_outputData2 = NULL;
+        unsigned int device_outputData_num_of_elements = image1_uchar.rows * image1_uchar.cols;
+        size_t device_outputData_num_of_bytes1 = device_outputData_num_of_elements * sizeof(unsigned char);
+        HANDLE_ERROR(cudaMalloc((void**)&device_outputData1, device_outputData_num_of_bytes1));
+
+        size_t device_outputData_num_of_bytes2 = device_outputData_num_of_elements * sizeof(unsigned short);
+        HANDLE_ERROR(cudaMalloc((void**)&device_outputData2, device_outputData_num_of_bytes2));
 
 
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    //create device_input_width
-    int* device_input_width = NULL;
-    size_t device_input_width_bytes = sizeof(int);
-    HANDLE_ERROR(cudaMalloc((void**)&device_input_width, device_input_width_bytes));
-    HANDLE_ERROR(cudaMemcpy(device_input_width, &(image1_uchar.cols), device_input_width_bytes, cudaMemcpyHostToDevice));
 
 
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    //create device_input_height
-    int* device_input_height = NULL;
-    size_t device_input_height_bytes = sizeof(int);
-    HANDLE_ERROR(cudaMalloc((void**)&device_input_height, device_input_height_bytes));
-    HANDLE_ERROR(cudaMemcpy(device_input_height, &(image1_uchar.rows), device_input_height_bytes, cudaMemcpyHostToDevice));
-
-
-
-    /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    //create device_uchar_pixel_size
-    int* device_uchar_pixel_size = NULL;
-    size_t device_uchar_pixel_size_bytes = sizeof(int);
-    HANDLE_ERROR(cudaMalloc((void**)&device_uchar_pixel_size, device_uchar_pixel_size_bytes));
-    int uchar_pixel_size = (int)PixelType::UCHAR;
-    HANDLE_ERROR(cudaMemcpy(device_uchar_pixel_size, &(uchar_pixel_size), device_uchar_pixel_size_bytes, cudaMemcpyHostToDevice));
-
-    //create device_ushort_pixel_size
-    int* device_ushort_pixel_size = NULL;
-    size_t device_ushort_pixel_size_bytes = sizeof(int);
-    HANDLE_ERROR(cudaMalloc((void**)&device_ushort_pixel_size, device_ushort_pixel_size_bytes));
-
-    int ushort_pixel_size = (int)PixelType::USHORT;
-    HANDLE_ERROR(cudaMemcpy(device_ushort_pixel_size, &(ushort_pixel_size), device_ushort_pixel_size_bytes, cudaMemcpyHostToDevice));
-
-    int image_height = image1_uchar.rows;
-    int image_width = image1_uchar.cols;
-    int num_of_channels = 1;
-    
-    //int blocksPerGrid = 256;    //dridDim is two-dimensional
-    //int threadsPerBlock = 256;  //blockDim is three-dimensional
-
-    
-    cudaDeviceProp  prop;
-    int device_index = 0; //For now I assume there's only one GPu device
-    HANDLE_ERROR(cudaGetDeviceProperties(&prop, device_index));
-    int maxThreadsPerBlock = prop.maxThreadsPerBlock;
-
-    //int threadsPerBlock = std::min(image_height, maxThreadsPerBlock);
-    //int blocksPerGrid = (image_height * image_width + threadsPerBlock - 1) / threadsPerBlock;
-
-    int num_of_threads_x = 16;
-    int num_of_threads_y = 16;
-
-    int num_of_blocks_x = image_width / num_of_threads_x;
-    int num_of_blocks_y = image_height / num_of_threads_y;
-
-    dim3 blocksPerGrid(num_of_blocks_x, num_of_blocks_y);
-    dim3 threadsPerBlock(num_of_threads_x, num_of_threads_y);
-
-    BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
-
-    int is_clockwise = 1;
-    unsigned char max_val_uchar = 255;
-    unsigned short max_val_ushort = 65535;
-    render_circle_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, is_clockwise, max_val_uchar);
-    render_circle_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size, is_clockwise, max_val_ushort);
-
-    // Check for any errors launching the kernel
-    HANDLE_ERROR(cudaGetLastError());
+        //create device_input_width
+        int* device_input_width = NULL;
+        size_t device_input_width_bytes = sizeof(int);
+        HANDLE_ERROR(cudaMalloc((void**)&device_input_width, device_input_width_bytes));
+        HANDLE_ERROR(cudaMemcpy(device_input_width, &(image1_uchar.cols), device_input_width_bytes, cudaMemcpyHostToDevice));
 
 
-    // cudaDeviceSynchronize waits for the kernel to finish, and returns
-    // any errors encountered during the launch.
-    HANDLE_ERROR(cudaDeviceSynchronize());
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    // Copy output vector from GPU buffer to host memory.
-    unsigned char* outputData1 = (unsigned char*)malloc(device_outputData_num_of_bytes1);
-    HANDLE_ERROR(cudaMemcpy(outputData1, device_outputData1, device_outputData_num_of_bytes1, cudaMemcpyDeviceToHost));
+        //create device_input_height
+        int* device_input_height = NULL;
+        size_t device_input_height_bytes = sizeof(int);
+        HANDLE_ERROR(cudaMalloc((void**)&device_input_height, device_input_height_bytes));
+        HANDLE_ERROR(cudaMemcpy(device_input_height, &(image1_uchar.rows), device_input_height_bytes, cudaMemcpyHostToDevice));
 
-    image2_uchar.data = outputData1;
 
-    // Copy output vector from GPU buffer to host memory.
-    unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
-    HANDLE_ERROR(cudaMemcpy(outputData2, device_outputData2, device_outputData_num_of_bytes2, cudaMemcpyDeviceToHost));
-    image2_ushort.data = outputData2;
 
-    HANDLE_ERROR(cudaFree(device_inputData1));
-    HANDLE_ERROR(cudaFree(device_inputData2));
-    HANDLE_ERROR(cudaFree(device_outputData1));
-    HANDLE_ERROR(cudaFree(device_outputData2));
-    HANDLE_ERROR(cudaFree(device_input_width));
-    HANDLE_ERROR(cudaFree(device_input_height));
-    HANDLE_ERROR(cudaFree(device_uchar_pixel_size));
-    HANDLE_ERROR(cudaFree(device_ushort_pixel_size));
+        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+        //create device_uchar_pixel_size
+        int* device_uchar_pixel_size = NULL;
+        size_t device_uchar_pixel_size_bytes = sizeof(int);
+        HANDLE_ERROR(cudaMalloc((void**)&device_uchar_pixel_size, device_uchar_pixel_size_bytes));
+        int uchar_pixel_size = (int)PixelType::UCHAR;
+        HANDLE_ERROR(cudaMemcpy(device_uchar_pixel_size, &(uchar_pixel_size), device_uchar_pixel_size_bytes, cudaMemcpyHostToDevice));
+
+        //create device_ushort_pixel_size
+        int* device_ushort_pixel_size = NULL;
+        size_t device_ushort_pixel_size_bytes = sizeof(int);
+        HANDLE_ERROR(cudaMalloc((void**)&device_ushort_pixel_size, device_ushort_pixel_size_bytes));
+
+        int ushort_pixel_size = (int)PixelType::USHORT;
+        HANDLE_ERROR(cudaMemcpy(device_ushort_pixel_size, &(ushort_pixel_size), device_ushort_pixel_size_bytes, cudaMemcpyHostToDevice));
+
+        int image_height = image1_uchar.rows;
+        int image_width = image1_uchar.cols;
+        int num_of_channels = 1;
+
+        //int blocksPerGrid = 256;    //dridDim is two-dimensional
+        //int threadsPerBlock = 256;  //blockDim is three-dimensional
+
+
+        cudaDeviceProp  prop;
+        int device_index = 0; //For now I assume there's only one GPu device
+        HANDLE_ERROR(cudaGetDeviceProperties(&prop, device_index));
+        int maxThreadsPerBlock = prop.maxThreadsPerBlock;
+
+        //int threadsPerBlock = std::min(image_height, maxThreadsPerBlock);
+        //int blocksPerGrid = (image_height * image_width + threadsPerBlock - 1) / threadsPerBlock;
+
+        int num_of_threads_x = 16;
+        int num_of_threads_y = 16;
+
+        int num_of_blocks_x = image_width / num_of_threads_x;
+        int num_of_blocks_y = image_height / num_of_threads_y;
+
+        dim3 blocksPerGrid(num_of_blocks_x, num_of_blocks_y);
+        dim3 threadsPerBlock(num_of_threads_x, num_of_threads_y);
+
+        BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
+
+
+
+        render_circle_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, ticks);
+        //render_circle_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size, ticks);
+
+        // Check for any errors launching the kernel
+        HANDLE_ERROR(cudaGetLastError());
+
+
+        // cudaDeviceSynchronize waits for the kernel to finish, and returns
+        // any errors encountered during the launch.
+        HANDLE_ERROR(cudaDeviceSynchronize());
+
+        // Copy output vector from GPU buffer to host memory.
+        unsigned char* outputData1 = (unsigned char*)malloc(device_outputData_num_of_bytes1);
+        HANDLE_ERROR(cudaMemcpy(outputData1, device_outputData1, device_outputData_num_of_bytes1, cudaMemcpyDeviceToHost));
+
+        image2_uchar.data = outputData1;
+
+        // Copy output vector from GPU buffer to host memory.
+        unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
+        HANDLE_ERROR(cudaMemcpy(outputData2, device_outputData2, device_outputData_num_of_bytes2, cudaMemcpyDeviceToHost));
+        //image2_ushort.data = outputData2;
+
+        HANDLE_ERROR(cudaFree(device_inputData1));
+        HANDLE_ERROR(cudaFree(device_inputData2));
+        HANDLE_ERROR(cudaFree(device_outputData1));
+        HANDLE_ERROR(cudaFree(device_outputData2));
+        HANDLE_ERROR(cudaFree(device_input_width));
+        HANDLE_ERROR(cudaFree(device_input_height));
+        HANDLE_ERROR(cudaFree(device_uchar_pixel_size));
+        HANDLE_ERROR(cudaFree(device_ushort_pixel_size));
 #endif //USE_CUDA
 
 
-    if (read_image_from_file == true)
-    {
-        double scale_factor = 0.25;
-        cv::Mat resized_image1_uchar = calc_resized_image(image1_uchar, scale_factor);
-        cv::Mat resized_image2_uchar = calc_resized_image(image2_uchar, scale_factor);
-        cv::Mat resized_image1_ushort = calc_resized_image(image1_ushort, scale_factor);
-        cv::Mat resized_image2_ushort = calc_resized_image(image2_ushort, scale_factor);
-        
-        cv::imshow("resized_image1_uchar", resized_image1_uchar);
-        cv::imshow("resized_image2_uchar", resized_image2_uchar);
+        if (read_image_from_file == true)
+        {
+            double scale_factor = 0.25;
+            cv::Mat resized_image1_uchar = calc_resized_image(image1_uchar, scale_factor);
+            cv::Mat resized_image2_uchar = calc_resized_image(image2_uchar, scale_factor);
+            cv::Mat resized_image1_ushort = calc_resized_image(image1_ushort, scale_factor);
+            cv::Mat resized_image2_ushort = calc_resized_image(image2_ushort, scale_factor);
 
-        cv::imshow("resized_image1_ushort", resized_image1_ushort);
-        cv::imshow("resized_image2_ushort", resized_image2_ushort);
+            //cv::imshow("resized_image1_uchar", resized_image1_uchar);
+            cv::imshow("resized_image2_uchar", resized_image2_uchar);
 
-        //cv::imshow("image1_float", image1_float);
-        //cv::imshow("image2_float", image2_float);
+            //cv::imshow("resized_image1_ushort", resized_image1_ushort);
+            //cv::imshow("resized_image2_ushort", resized_image2_ushort);
+
+            //cv::imshow("image1_float", image1_float);
+            //cv::imshow("image2_float", image2_float);
+        }
+        else
+        {
+            print_pixels("image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
+            print_pixels("image2_uchar", image2_uchar.data, image2_uchar.rows, image2_uchar.cols, PixelType::UCHAR);
+
+            print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
+            print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT);
+
+            //print_pixels("image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
+            //print_pixels("image2_float", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::FLOAT);
+        }
+
+        int k = cv::waitKey(1); // Wait for a keystroke in the window
     }
-    else
-    {
-        print_pixels("image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
-        print_pixels("image2_uchar", image2_uchar.data, image2_uchar.rows, image2_uchar.cols, PixelType::UCHAR);
 
-        print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
-        print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT);
 
-        //print_pixels("image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
-        //print_pixels("image2_float", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::FLOAT);
-    }
 
-    int k = cv::waitKey(0); // Wait for a keystroke in the window
+
+
     getchar();
 
 
@@ -671,56 +445,3 @@ int main()
     return 0;
 }
 
-
-
-
-//#include <iostream>
-//#include <opencv2/core.hpp>
-//#include <opencv2/imgcodecs.hpp>
-//#include <opencv2/highgui.hpp>
-//#include <cuda_runtime.h>
-//
-//// CUDA kernel code
-//__global__ void multiply_by_constant(float* input, float constant, int size)
-//{
-//    int idx = blockIdx.x * blockDim.x + threadIdx.x;
-//    if (idx < size)
-//    {
-//        input[idx] *= constant;
-//    }
-//}
-//
-//int main()
-//{
-//    // Create a sample buffer array in C++
-//    int size = 9;
-//    float input_buffer[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
-//
-//    // Allocate memory on the GPU
-//    float* d_input_buffer;
-//    cudaMalloc((void**)&d_input_buffer, size * sizeof(float));
-//
-//    // Copy the input buffer from the CPU to the GPU
-//    cudaMemcpy(d_input_buffer, input_buffer, size * sizeof(float), cudaMemcpyHostToDevice);
-//
-//    // Define the block and grid dimensions for CUDA execution
-//    int block_size = 256;
-//    int num_blocks = (size + block_size - 1) / block_size;
-//
-//    // Execute the CUDA kernel
-//    multiply_by_constant<<<num_blocks, block_size>>>(d_input_buffer, 2.0f, size);
-//
-//    // Copy the result back from the GPU to the CPU
-//    float output_buffer[size];
-//    cudaMemcpy(output_buffer, d_input_buffer, size * sizeof(float), cudaMemcpyDeviceToHost);
-//
-//    // Clean up memory on the GPU
-//    cudaFree(d_input_buffer);
-//
-//    // Show the result using OpenCV (just as an example)
-//    cv::Mat result = cv::Mat(1, size, CV_32F, output_buffer);
-//    std::cout << "Input Buffer: " << cv::Mat(1, size, CV_32F, input_buffer) << std::endl;
-//    std::cout << "Output Buffer: " << result << std::endl;
-//
-//    return 0;
-//}

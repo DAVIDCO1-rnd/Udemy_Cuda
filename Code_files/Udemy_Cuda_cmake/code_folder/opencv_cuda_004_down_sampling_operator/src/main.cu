@@ -8,7 +8,7 @@
 #include "cuda_utils.cuh"
 #include "opencv_utils.h"
 
-//#define USE_CUDA
+#define USE_CUDA
 //#define USE_X_DIMENSIONS_ONLY
 
 #ifdef USE_CUDA
