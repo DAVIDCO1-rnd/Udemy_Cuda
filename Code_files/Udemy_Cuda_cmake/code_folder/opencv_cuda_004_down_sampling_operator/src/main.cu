@@ -166,25 +166,6 @@ int main()
     }
 #endif  //USE_X_DIMENSIONS_ONLY
 
-    //String errorMessage = ExternalDownSample
-    //(sourceDataPointer, resultDataPointer,
-    //    sourceImage.Width, sourceImage.Height, sourceImage.Stride,
-    //    resultImage.Width, resultImage.Height, resultImage.Stride,
-    //    horizontalScale, verticalScale,
-    //    (int)sourceImage.SubPixelType, sourceImage.MaxValue, sourceImage.AlphaChannelNumber,
-    //    sourceImage.PixelSize, sourceImage.PixelSize / sourceImage.Channels,
-    //    dims.BlockSize[0], dims.BlockSize[1], dims.BlockSize[2],
-    //    dims.GridSize[0], dims.GridSize[1]);
-
-
-    //__wchar_t* DownSample(
-    //    void* deviceInputBuffer, void* deviceOutputBuffer,
-    //    int widthSourceImage, int heightSourceImage, int strideSourceImage,
-    //    int widthDestImage, int heightDestImage, int strideDestImage,
-    //    double horizontalScale, double verticalScale,
-    //    int subPixelType, int maxValue, int alphaChannelNumber, int pixelSize, int channelSize,
-    //    int blockSizeX, int blockSizeY, int blockSizeZ, int gridSizeX, int gridSizeY)
-
     __wchar_t* DownSample_status1 = DownSample(device_inputData1, device_outputData1,
         input_image_width, input_image_height, uchar_strideSourceImage, 
         output_image_width, output_image_height, uchar_strideResultImage,
