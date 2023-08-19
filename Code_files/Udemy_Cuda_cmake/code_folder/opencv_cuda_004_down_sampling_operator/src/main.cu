@@ -56,7 +56,7 @@ int main()
             std::cout << "Could not read the image: " << image_path << std::endl;
             return 1;
         }
-        image1_uchar.convertTo(image1_ushort, CV_16UC1, 256);
+        image1_uchar.convertTo(image1_ushort, CV_16UC1, 1);
         image1_uchar.convertTo(image1_float, CV_32FC1, 65536);
     }
 
@@ -246,14 +246,21 @@ int main()
         double scale_factor = 0.25;
         cv::Mat resized_image1_uchar = calc_resized_image(image1_uchar, scale_factor);
         cv::Mat resized_image2_uchar = calc_resized_image(image2_uchar, scale_factor);
-        cv::Mat resized_image1_ushort = calc_resized_image(image1_ushort, scale_factor);
-        cv::Mat resized_image2_ushort = calc_resized_image(image2_ushort, scale_factor);
+
+        cv::Mat normalized_image1_ushort;
+        cv::normalize(image1_ushort, normalized_image1_ushort, 0, 65535, cv::NORM_MINMAX);
+
+        cv::Mat normalized_image2_ushort;
+        cv::normalize(image2_ushort, normalized_image2_ushort, 0, 65535, cv::NORM_MINMAX);
+
+        cv::Mat resized_normalized_image1_ushort = calc_resized_image(normalized_image1_ushort, scale_factor);
+        cv::Mat resized_normalized_image2_ushort = calc_resized_image(normalized_image2_ushort, scale_factor);
 
         cv::imshow("resized_image1_uchar", resized_image1_uchar);
         cv::imshow("resized_image2_uchar", resized_image2_uchar);
 
-        cv::imshow("resized_image1_ushort", resized_image1_ushort);
-        cv::imshow("resized_image2_ushort", resized_image2_ushort);
+        cv::imshow("resized_normalized_image1_ushort", resized_normalized_image1_ushort);
+        cv::imshow("resized_normalized_image2_ushort", resized_normalized_image2_ushort);
 
         //cv::imshow("image1_float", image1_float);
         //cv::imshow("image2_float", image2_float);
