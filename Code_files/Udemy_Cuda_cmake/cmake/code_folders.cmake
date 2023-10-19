@@ -10,7 +10,7 @@ file(GLOB SRC_FILES "${src_folder}/*.cpp" "${src_folder}/*.c" "${src_folder}/*.c
 
 
 set(CUDA_TOOLKIT_ROOT_DIR "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2/bin")
-find_package(CUDA 10.2 REQUIRED)
+# find_package(CUDA 10.2 REQUIRED)
 
 message(STATUS "INCLUDE_FILES = ${INCLUDE_FILES}")
 add_executable(${target_name} 

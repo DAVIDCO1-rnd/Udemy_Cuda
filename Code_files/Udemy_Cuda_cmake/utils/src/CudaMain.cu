@@ -4,6 +4,8 @@
 #error Must be compiled with CUDA compiler!
 #endif
 
+
+#include <cuda_runtime_api.h>
 #include "CudaMain.cuh"
 
 __wchar_t* CudaErrorToErrorMessage(cudaError err)

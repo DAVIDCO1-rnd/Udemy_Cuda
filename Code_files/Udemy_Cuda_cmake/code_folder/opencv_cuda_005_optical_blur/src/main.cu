@@ -7,23 +7,25 @@
 #include <stdio.h>
 #include <cmath>
 
+#include "cuda_utils.cuh"
+#include "opencv_utils.h"
 #include "Inverse.cuh"
 
 #define USE_CUDA
 //#define USE_X_DIMENSIONS_ONLY
 
 
-#ifdef USE_CUDA
-#include "cuda_runtime.h"
-#include "device_launch_parameters.h"
-static void HandleError(cudaError_t err, const char* file, int line) {
-    if (err != cudaSuccess) {
-        printf("%s in %s at line %d\n", cudaGetErrorString(err), file, line);
-        exit(EXIT_FAILURE);
-    }
-}
-#define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
-#endif //USE_CUDA
+//#ifdef USE_CUDA
+//#include "cuda_runtime.h"
+//#include "device_launch_parameters.h"
+//static void HandleError(cudaError_t err, const char* file, int line) {
+//    if (err != cudaSuccess) {
+//        printf("%s in %s at line %d\n", cudaGetErrorString(err), file, line);
+//        exit(EXIT_FAILURE);
+//    }
+//}
+//#define HANDLE_ERROR( err ) (HandleError( err, __FILE__, __LINE__ ))
+//#endif //USE_CUDA
 
 bool read_image_from_file = true;
 const int height = 3;
@@ -257,74 +259,74 @@ cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
 }
 
 #ifdef USE_CUDA
-class BlockAndGridDimensions {
-public:
-    dim3 blocksPerGrid;
-    dim3 threadsPerBlock;
-    BlockAndGridDimensions(dim3 block_sizes, dim3 grid_sizes) {
-        blocksPerGrid = grid_sizes;
-        threadsPerBlock = block_sizes;
-    }
-};
+//class BlockAndGridDimensions {
+//public:
+//    dim3 blocksPerGrid;
+//    dim3 threadsPerBlock;
+//    BlockAndGridDimensions(dim3 block_sizes, dim3 grid_sizes) {
+//        blocksPerGrid = grid_sizes;
+//        threadsPerBlock = block_sizes;
+//    }
+//};
 
-//c++ code:
-BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width, int height)
-{
-    cudaDeviceProp  prop;
-    int device_index = 0; //For now I assume there's only one GPu device
-    HANDLE_ERROR(cudaGetDeviceProperties(&prop, device_index));
-    int maxThreadsPerBlock = prop.maxThreadsPerBlock;
-    int maxBlockSize = maxThreadsPerBlock / 2;
-
-    dim3 blockSize;
-    dim3 gridSize;
-
-    // Calculate optimal block size, depends on the number of channels in picture
-    if (width * height * channels < maxBlockSize)
-    {
-        blockSize.x = width;
-        blockSize.y = height;
-    }
-    else
-    {
-        int warpSize = prop.warpSize;
-        float dWarp = warpSize / (float)channels;
-        int maxSize = (int)(maxBlockSize / (float)channels);
-
-        if (width <= maxSize)
-            blockSize.x = width;
-        else
-        {
-            float threadsX = 0.0f;
-            while (threadsX < maxSize)
-            {
-                threadsX += dWarp;
-
-            }
-            blockSize.x = (int)threadsX;
-        }
-        blockSize.y = maxSize / blockSize.x;
-        if (blockSize.y == 0)
-        {
-            blockSize.y = 1;
-        }
-    }
-
-    //block size 3rd dimension is always the number of channels.
-    blockSize.z = channels;
-
-    //calculate grid size. (number of necessary blocks to cover the whole picture) 
-    gridSize.x = (int)ceil((double)width / blockSize.x);
-    gridSize.y = (int)ceil((double)height / blockSize.y);
-
-    BlockAndGridDimensions* block_and_grid_dimensions = new BlockAndGridDimensions(blockSize, gridSize);
-    return block_and_grid_dimensions;
-
-    //return new BlockAndGridDimensions(
-    //    blockSize,
-    //    gridSize
-    //);
-}
+////c++ code:
+//BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width, int height)
+//{
+//    cudaDeviceProp  prop;
+//    int device_index = 0; //For now I assume there's only one GPu device
+//    HANDLE_ERROR(cudaGetDeviceProperties(&prop, device_index));
+//    int maxThreadsPerBlock = prop.maxThreadsPerBlock;
+//    int maxBlockSize = maxThreadsPerBlock / 2;
+//
+//    dim3 blockSize;
+//    dim3 gridSize;
+//
+//    // Calculate optimal block size, depends on the number of channels in picture
+//    if (width * height * channels < maxBlockSize)
+//    {
+//        blockSize.x = width;
+//        blockSize.y = height;
+//    }
+//    else
+//    {
+//        int warpSize = prop.warpSize;
+//        float dWarp = warpSize / (float)channels;
+//        int maxSize = (int)(maxBlockSize / (float)channels);
+//
+//        if (width <= maxSize)
+//            blockSize.x = width;
+//        else
+//        {
+//            float threadsX = 0.0f;
+//            while (threadsX < maxSize)
+//            {
+//                threadsX += dWarp;
+//
+//            }
+//            blockSize.x = (int)threadsX;
+//        }
+//        blockSize.y = maxSize / blockSize.x;
+//        if (blockSize.y == 0)
+//        {
+//            blockSize.y = 1;
+//        }
+//    }
+//
+//    //block size 3rd dimension is always the number of channels.
+//    blockSize.z = channels;
+//
+//    //calculate grid size. (number of necessary blocks to cover the whole picture) 
+//    gridSize.x = (int)ceil((double)width / blockSize.x);
+//    gridSize.y = (int)ceil((double)height / blockSize.y);
+//
+//    BlockAndGridDimensions* block_and_grid_dimensions = new BlockAndGridDimensions(blockSize, gridSize);
+//    return block_and_grid_dimensions;
+//
+//    //return new BlockAndGridDimensions(
+//    //    blockSize,
+//    //    gridSize
+//    //);
+//}
 
 //c# code:
 //public static BlockAndGridDimensions CalculateBlockAndGridDimensions(int channels, int width, int height)
@@ -380,21 +382,21 @@ BlockAndGridDimensions* CalculateBlockAndGridDimensions(int channels, int width,
 //}
 #endif //USE_CUDA
 
-cv::Mat calc_resized_image(cv::Mat image, double scale_factor)
-{
-
-    // Calculate the new dimensions based on the scale factor
-    int newWidth = static_cast<int>(image.cols * scale_factor);
-    int newHeight = static_cast<int>(image.rows * scale_factor);
-
-    // Create a new image with the scaled dimensions
-    cv::Mat scaledImage;
-
-    // Resize the image using the resize function
-    cv::resize(image, scaledImage, cv::Size(newWidth, newHeight), cv::INTER_LINEAR);
-
-    return scaledImage;
-}
+//cv::Mat calc_resized_image(cv::Mat image, double scale_factor)
+//{
+//
+//    // Calculate the new dimensions based on the scale factor
+//    int newWidth = static_cast<int>(image.cols * scale_factor);
+//    int newHeight = static_cast<int>(image.rows * scale_factor);
+//
+//    // Create a new image with the scaled dimensions
+//    cv::Mat scaledImage;
+//
+//    // Resize the image using the resize function
+//    cv::resize(image, scaledImage, cv::Size(newWidth, newHeight), cv::INTER_LINEAR);
+//
+//    return scaledImage;
+//}
 
 int main()
 {

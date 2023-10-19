@@ -99,7 +99,7 @@ int main(int argc, char **argv)
     source[i] = dist(rng);
   }
 
-  int N_STREAMS = 16;
+  const int N_STREAMS = 16;
   int *results[N_STREAMS];
   int *sources[N_STREAMS];
   cudaStream_t stream[N_STREAMS];
