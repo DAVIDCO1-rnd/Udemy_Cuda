@@ -8,6 +8,7 @@
 *.exe
 *.exp
 *.lib
+*.ppm
 **/Cuda_workspace/
 **/workspace/
 **/build
