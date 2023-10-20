@@ -88,9 +88,9 @@ int main(int argc, char **argv)
 	char command_name[] = "spotlights";
 	//char input_image_name[] = "../bridge.ppm";
 	//going back from this folder: ./build/code_folder/Section3.3_spotlights/
-	char input_image_full_path[] = "../../../code_folder/Section3.3_spotlights/images/bridge.ppm";
+	char input_image_full_path[] = "../../../images/bridge.ppm";
 	//char input_image_full_path[] = "../../../code_folder/Section3.3_spotlights/images/unity_frame.jpg";
-	char output_image_full_path[] = "../../../code_folder/Section3.3_spotlights/images/output_unity_frame.ppm";
+	char output_image_full_path[] = "../../../images/output_unity_frame.ppm";
 	char* my_argv[3];
 	my_argv[0] = command_name;
 	my_argv[1] = input_image_full_path;
