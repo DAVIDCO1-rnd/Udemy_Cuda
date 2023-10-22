@@ -58,6 +58,11 @@ void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimensi
     print_pixels_2D(matrix_name, pixelData, dimension1, dimension2);
 }
 
+#define DIMENSIONS 512
+#define rnd( x ) (x * rand() / RAND_MAX)
+#define INF     2e10f
+#define NUM_OF_SPHERES 20
+
 #ifdef USE_CUDA
 
 __device__ inline int PixelOffset1D(int x, int channel, int pixelSize, int channelSize)
@@ -79,11 +84,6 @@ __device__  inline bool DecodeYXC(int* y, int* x, int* c, int widthImage, int he
     return (*y >= 0 && *y < heightImage&&* x >= 0 && *x < widthImage);
 }
 
-
-#define DIMENSIONS 512
-#define rnd( x ) (x * rand() / RAND_MAX)
-#define INF     2e10f
-
 struct Sphere {
     float   r, b, g;
     float   radius;
@@ -99,9 +99,6 @@ struct Sphere {
         return -INF;
     }
 };
-
-
-#define NUM_OF_SPHERES 20
 
 __global__ void kernel(Sphere* sphere_object, unsigned char* ptr) {
     // map from threadIdx/BlockIdx to pixel position
@@ -131,9 +128,7 @@ __global__ void kernel(Sphere* sphere_object, unsigned char* ptr) {
     ptr[offset * 4 + 3] = 255;
 }
 #else
-#define DIMENSIONS 512
-#define rnd( x ) (x * rand() / RAND_MAX)
-#define INF     2e10f
+
 
 struct Sphere {
     float   r, b, g;
@@ -152,7 +147,7 @@ struct Sphere {
 };
 
 
-#define NUM_OF_SPHERES 20
+
 
 void kernel_cpu(Sphere* sphere_object, unsigned char* ptr, int input_width, int input_height)
 {
@@ -201,49 +196,38 @@ int main()
     int width = DIMENSIONS;
     int height = DIMENSIONS;
     Sphere* sphere_object;
+    bool use_random = false;
 
-    //going back from this folder: ./build/code_folder/Section3.3_spotlights/
-    //std::string image_path = "../../../images/balloons.jpg";
-    cv::Mat image1_uchar;
-    cv::Mat image1_ushort;
-    cv::Mat image1_float;
-    if (read_image_from_file == true)
-    {
-        //cv::Mat rgb_image1 = cv::imread(image_path);        
-        //cv::cvtColor(rgb_image1, image1_uchar, cv::COLOR_BGR2GRAY);
+    cv::Mat image2_uchar(height, width, CV_8UC4);
 
-        image1_uchar = cv::Mat(width, height, CV_8UC1, cv::Scalar(0));
-        image1_uchar.convertTo(image1_ushort, CV_16UC1, 256);
-        image1_uchar.convertTo(image1_float, CV_32FC1, 65536);
-    }
-
-
-
-    cv::Mat image2_uchar(image1_uchar.cols, image1_uchar.rows, CV_8UC4);
-    //cv::Mat image2_ushort(image1_ushort.cols, image1_ushort.rows, CV_16UC1);
-    //cv::Mat image2_float(image1_float.cols, image1_float.rows, CV_32FC1);
 
     for (int i = 0; i < num_of_frames; i++)
     {
 #ifndef USE_CUDA
         sphere_object = (Sphere*)malloc(sizeof(Sphere) * NUM_OF_SPHERES);
-        //for (int i = 0; i < NUM_OF_SPHERES; i++) {
-        //    sphere_object[i].r = rnd(1.0f);
-        //    sphere_object[i].g = rnd(1.0f);
-        //    sphere_object[i].b = rnd(1.0f);
-        //    sphere_object[i].x = rnd(1000.0f) - 500;
-        //    sphere_object[i].y = rnd(1000.0f) - 500;
-        //    sphere_object[i].z = rnd(1000.0f) - 500;
-        //    sphere_object[i].radius = rnd(100.0f) + 20;
-        //}
-        for (int i = 0; i < NUM_OF_SPHERES; i++) {
-            sphere_object[i].r = 0.0f;
-            sphere_object[i].g = 0.0f;
-            sphere_object[i].b = 1.0f;
-            sphere_object[i].x = 0.0f;
-            sphere_object[i].y = 0.0f;
-            sphere_object[i].z = 0.0f;
-            sphere_object[i].radius = 80.0f;
+        if (use_random == true)
+        {
+            for (int i = 0; i < NUM_OF_SPHERES; i++) {
+                sphere_object[i].r = rnd(1.0f);
+                sphere_object[i].g = rnd(1.0f);
+                sphere_object[i].b = rnd(1.0f);
+                sphere_object[i].x = rnd(1000.0f) - 500;
+                sphere_object[i].y = rnd(1000.0f) - 500;
+                sphere_object[i].z = rnd(1000.0f) - 500;
+                sphere_object[i].radius = rnd(100.0f) + 20;
+            }
+        }
+        else
+        {
+            for (int i = 0; i < NUM_OF_SPHERES; i++) {
+                sphere_object[i].r = 0.0f;
+                sphere_object[i].g = 0.0f;
+                sphere_object[i].b = 1.0f;
+                sphere_object[i].x = 0.0f;
+                sphere_object[i].y = 0.0f;
+                sphere_object[i].z = 0.0f;
+                sphere_object[i].radius = 80.0f;
+            }
         }
         kernel_cpu(sphere_object, image2_uchar.data, image2_uchar.cols, image2_uchar.rows);
 #endif
@@ -347,24 +331,32 @@ int main()
         // allocate memory for the Sphere dataset
         HANDLE_ERROR(cudaMalloc((void**)&sphere_object, sizeof(Sphere)* NUM_OF_SPHERES));
         Sphere* temp_s = (Sphere*)malloc(sizeof(Sphere) * NUM_OF_SPHERES);
-        for (int i = 0; i < NUM_OF_SPHERES; i++) {
-            temp_s[i].r = rnd(1.0f);
-            temp_s[i].g = rnd(1.0f);
-            temp_s[i].b = rnd(1.0f);
-            temp_s[i].x = rnd(1000.0f) - 500;
-            temp_s[i].y = rnd(1000.0f) - 500;
-            temp_s[i].z = rnd(1000.0f) - 500;
-            temp_s[i].radius = rnd(100.0f) + 20;
+        if (use_random == true)
+        {
+            for (int i = 0; i < NUM_OF_SPHERES; i++) {
+                temp_s[i].r = rnd(1.0f);
+                temp_s[i].g = rnd(1.0f);
+                temp_s[i].b = rnd(1.0f);
+                temp_s[i].x = rnd(1000.0f) - 500;
+                temp_s[i].y = rnd(1000.0f) - 500;
+                temp_s[i].z = rnd(1000.0f) - 500;
+                temp_s[i].radius = rnd(100.0f) + 20;
+            }
         }
-        //for (int i = 0; i < NUM_OF_SPHERES; i++) {
-        //    temp_s[i].r = 0.0f;
-        //    temp_s[i].g = 0.0f;
-        //    temp_s[i].b = 1.0f;
-        //    temp_s[i].x = 0.0f;
-        //    temp_s[i].y = 0.0f;
-        //    temp_s[i].z = 0.0f;
-        //    temp_s[i].radius = 80.0f;
-        //}
+        else
+        {
+            for (int i = 0; i < NUM_OF_SPHERES; i++) {
+                temp_s[i].r = 0.0f;
+                temp_s[i].g = 0.0f;
+                temp_s[i].b = 1.0f;
+                temp_s[i].x = 0.0f;
+                temp_s[i].y = 0.0f;
+                temp_s[i].z = 0.0f;
+                temp_s[i].radius = 80.0f;
+            }
+        }
+
+
         HANDLE_ERROR(cudaMemcpy(sphere_object, temp_s, sizeof(Sphere) * NUM_OF_SPHERES, cudaMemcpyHostToDevice));
         free(temp_s);
 
@@ -411,7 +403,6 @@ int main()
         }
         else
         {
-            print_pixels("image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols);
             print_pixels("image2_uchar", image2_uchar.data, image2_uchar.rows, image2_uchar.cols);
         }
 
