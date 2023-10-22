@@ -18,78 +18,44 @@ const int height = 3;
 const int width = 5;
 
 
-
-
-
-
-enum class DirectionOfRotation {
-    Clockwise = 0,
-    CounterClockwise = 1
-};
-
-enum class PixelType {
-    UCHAR = 1,
-    USHORT = 2,
-    FLOAT = 4
-};
-
-void print_single_val(unsigned char* pixelData, int i, PixelType pixel_type)
+void print_single_val(unsigned char* pixelData, int i)
 {
-    if (pixel_type == PixelType::UCHAR)
-    {
-        unsigned char current_val = pixelData[i];
-        printf("0x%02x, ", current_val);
-    }
-    if (pixel_type == PixelType::USHORT)
-    {
-        unsigned char sub_pixel1 = pixelData[i + 0];
-        unsigned char sub_pixel2 = pixelData[i + 1];
-        unsigned short current_val = 0x100 * sub_pixel2 + sub_pixel1;
-        printf("0x%04x, ", current_val);
-    }
-    if (pixel_type == PixelType::FLOAT)
-    {
-        unsigned char sub_pixel1 = pixelData[i + 0];
-        unsigned char sub_pixel2 = pixelData[i + 1];
-        unsigned char sub_pixel3 = pixelData[i + 2];
-        unsigned char sub_pixel4 = pixelData[i + 3];
-        float current_val = 4.0 * sub_pixel4 + 3.0 * sub_pixel3 + 2.0 * sub_pixel2 + 1.0 * sub_pixel1;
-        printf("%f, ", current_val);
-    }
+    unsigned char current_val = pixelData[i];
+    printf("0x%02x, ", current_val);
 }
 
 
-void print_pixels_1D(std::string matrix_name, unsigned char* pixelData, int dimension1, int dimension2, PixelType pixel_type)
+void print_pixels_1D(std::string matrix_name, unsigned char* pixelData, int dimension1, int dimension2)
 {
-    int pixel_size = (int)pixel_type;
+    int pixel_size = 1;
     printf("%s as 1D array\n", matrix_name.c_str());
     for (int i = 0; i < pixel_size * dimension1 * dimension2; i+=pixel_size)
     {
-        print_single_val(pixelData, i, pixel_type);
+        print_single_val(pixelData, i);
     }
     printf("\n\n");
 }
 
-void print_pixels_2D(std::string matrix_name, unsigned char* pixelData, int dimension1, int dimension2, PixelType pixel_type)
+void print_pixels_2D(std::string matrix_name, unsigned char* pixelData, int dimension1, int dimension2)
 {
-    int pixel_size = (int)pixel_type;
+    int pixel_size = 1;
     printf("%s as 2D array\n", matrix_name.c_str());
     for (int i = 0; i < dimension1; i++)
     {
         for (int j = 0; j < pixel_size * dimension2; j += pixel_size)
         {
             int current_index = i * pixel_size * dimension2 + j;
-            print_single_val(pixelData, current_index, pixel_type);
+            print_single_val(pixelData, current_index);
         }
         printf("\n");
     }
     printf("\n\n");
 }
 
-void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimension1, int dimension2, PixelType pixel_type)
+void print_pixels(std::string matrix_name, unsigned char* pixelData, int dimension1, int dimension2)
 {
-    print_pixels_1D(matrix_name, pixelData, dimension1, dimension2, pixel_type);
-    print_pixels_2D(matrix_name, pixelData, dimension1, dimension2, pixel_type);
+    print_pixels_1D(matrix_name, pixelData, dimension1, dimension2);
+    print_pixels_2D(matrix_name, pixelData, dimension1, dimension2);
 }
 
 #ifdef USE_CUDA
@@ -114,7 +80,7 @@ __device__  inline bool DecodeYXC(int* y, int* x, int* c, int widthImage, int he
 }
 
 
-#define DIMENSIONS 1024
+#define DIMENSIONS 512
 #define rnd( x ) (x * rand() / RAND_MAX)
 #define INF     2e10f
 
@@ -166,92 +132,6 @@ __global__ void kernel(unsigned char* ptr) {
 }   
 #endif //USE_CUDA
 
-template <class T>
-void render_circle_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, int pixel_size, int ticks)
-{
-    int output_width = input_height;
-    int output_height = input_width;
-
-    int i = 0;
-    while (i < input_width)
-    {
-        int j = 0;
-        while (j < input_height)
-        {
-            int current_index_input_data = pixel_size * (i * input_height + j);
-
-            float fx = i - input_width / 2;
-            float fy = j - input_height / 2;
-            float d = sqrtf(fx * fx + fy * fy);
-            unsigned char grey = (unsigned char)(128.0f + 127.0f *
-                cos(d / 10.0f - ticks / 7.0f) /
-                (d / 10.0f + 1.0f));
-
-            unsigned char pixel_value = grey;
-            *((T*)(outputData + current_index_input_data)) = (T)pixel_value;
-
-            
-            j++;
-        }
-        i++;
-    }
-
-    if (read_image_from_file == false)
-    {
-        printf("\n\n");
-        printf("build_transposed_image_cpu\n");
-        for (int i = 0; i < input_width * input_height; i++)
-        {
-            unsigned char current_val = outputData[i];
-            printf("%d.  %d\n", i, current_val);
-        }
-        printf("\n\n");
-    }  
-}
-
-cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
-{
-    cv::Mat image;
-    switch (pixel_type)
-    {
-        case PixelType::UCHAR:
-            image = cv::Mat(height, width, CV_8UC1);
-            for (int y = 0; y < image.rows; ++y) {
-                for (int x = 0; x < image.cols; ++x) {
-                    image.at<uchar>(y, x) = static_cast<uchar>(image_data[y][x]);
-                }
-            }
-            break;
-
-        case PixelType::USHORT:
-            image = cv::Mat(height, width, CV_16UC1);
-            for (int y = 0; y < image.rows; ++y) {
-                for (int x = 0; x < image.cols; ++x) {
-                    uchar current_val = image_data[y][x];
-                    ushort current_val_ushort = (ushort)current_val;
-                    ushort new_val = 0xFF00 + current_val_ushort;
-                    image.at<ushort>(y, x) = new_val;
-                }
-            }
-            break;
-
-        case PixelType::FLOAT:
-            image = cv::Mat(height, width, CV_32FC1);
-            for (int y = 0; y < image.rows; ++y) {
-                for (int x = 0; x < image.cols; ++x) {
-                    uchar current_val = image_data[y][x];
-                    float current_val_float = (float)current_val;
-                    float new_val = 1.0 * current_val_float;
-                    image.at<float>(y, x) = new_val;
-                }
-            }
-            break;
-
-    }
-    return image;
-}
-
-
 
 int main()
 {
@@ -283,10 +163,6 @@ int main()
     for (int i = 0; i < num_of_frames; i++)
     {
         ticks = ticks + 1;
-#ifndef USE_CUDA
-        render_circle_cpu<unsigned char>(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, (int)PixelType::UCHAR, ticks);
-#endif
-
 #ifdef USE_CUDA
         /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -345,7 +221,7 @@ int main()
         int* device_uchar_pixel_size = NULL;
         size_t device_uchar_pixel_size_bytes = sizeof(int);
         HANDLE_ERROR(cudaMalloc((void**)&device_uchar_pixel_size, device_uchar_pixel_size_bytes));
-        int uchar_pixel_size = (int)PixelType::UCHAR;
+        int uchar_pixel_size = 1;
         HANDLE_ERROR(cudaMemcpy(device_uchar_pixel_size, &(uchar_pixel_size), device_uchar_pixel_size_bytes, cudaMemcpyHostToDevice));
 
         //create device_ushort_pixel_size
@@ -353,8 +229,7 @@ int main()
         size_t device_ushort_pixel_size_bytes = sizeof(int);
         HANDLE_ERROR(cudaMalloc((void**)&device_ushort_pixel_size, device_ushort_pixel_size_bytes));
 
-        int ushort_pixel_size = (int)PixelType::USHORT;
-        HANDLE_ERROR(cudaMemcpy(device_ushort_pixel_size, &(ushort_pixel_size), device_ushort_pixel_size_bytes, cudaMemcpyHostToDevice));
+
 
         int image_height = image1_uchar.rows;
         int image_width = image1_uchar.cols;
@@ -417,11 +292,6 @@ int main()
 
         image2_uchar.data = outputData1;
 
-        // Copy output vector from GPU buffer to host memory.
-        //unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
-        //HANDLE_ERROR(cudaMemcpy(outputData2, device_outputData2, device_outputData_num_of_bytes2, cudaMemcpyDeviceToHost));
-        //image2_ushort.data = outputData2;
-
         HANDLE_ERROR(cudaFree(device_inputData1));
         HANDLE_ERROR(cudaFree(device_inputData2));
         HANDLE_ERROR(cudaFree(device_outputData1));
@@ -443,23 +313,11 @@ int main()
 
             //cv::imshow("resized_image1_uchar", resized_image1_uchar);
             cv::imshow("image2_uchar", image2_uchar);
-
-            //cv::imshow("resized_image1_ushort", resized_image1_ushort);
-            //cv::imshow("resized_image2_ushort", resized_image2_ushort);
-
-            //cv::imshow("image1_float", image1_float);
-            //cv::imshow("image2_float", image2_float);
         }
         else
         {
-            print_pixels("image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
-            print_pixels("image2_uchar", image2_uchar.data, image2_uchar.rows, image2_uchar.cols, PixelType::UCHAR);
-
-            //print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
-            //print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT);
-
-            //print_pixels("image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
-            //print_pixels("image2_float", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::FLOAT);
+            print_pixels("image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols);
+            print_pixels("image2_uchar", image2_uchar.data, image2_uchar.rows, image2_uchar.cols);
         }
 
         int k = cv::waitKey(0); // Wait for a keystroke in the window
