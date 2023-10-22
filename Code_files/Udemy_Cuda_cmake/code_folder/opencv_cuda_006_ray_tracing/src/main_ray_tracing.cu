@@ -99,9 +99,9 @@ struct Sphere {
         return -INF;
     }
 };
-#define SPHERES 20
+#define NUM_OF_SPHERES 20
 
-__constant__ Sphere s[SPHERES];
+__constant__ Sphere sphere_object[NUM_OF_SPHERES];
 
 __global__ void kernel(unsigned char* ptr) {
     // map from threadIdx/BlockIdx to pixel position
@@ -113,14 +113,14 @@ __global__ void kernel(unsigned char* ptr) {
 
     float   r = 0, g = 0, b = 0;
     float   maxz = -INF;
-    for (int i = 0; i < SPHERES; i++) {
+    for (int i = 0; i < NUM_OF_SPHERES; i++) {
         float   n;
-        float   t = s[i].hit(ox, oy, &n);
+        float   t = sphere_object[i].hit(ox, oy, &n);
         if (t > maxz) {
             float fscale = n;
-            r = s[i].r * fscale;
-            g = s[i].g * fscale;
-            b = s[i].b * fscale;
+            r = sphere_object[i].r * fscale;
+            g = sphere_object[i].g * fscale;
+            b = sphere_object[i].b * fscale;
             maxz = t;
         }
     }
@@ -261,8 +261,8 @@ int main()
 
         // allocate temp memory, initialize it, copy to constant
         // memory on the GPU, then free our temp memory
-        Sphere* temp_s = (Sphere*)malloc(sizeof(Sphere) * SPHERES);
-        for (int i = 0; i < SPHERES; i++) {
+        Sphere* temp_s = (Sphere*)malloc(sizeof(Sphere) * NUM_OF_SPHERES);
+        for (int i = 0; i < NUM_OF_SPHERES; i++) {
             temp_s[i].r = rnd(1.0f);
             temp_s[i].g = rnd(1.0f);
             temp_s[i].b = rnd(1.0f);
@@ -271,7 +271,7 @@ int main()
             temp_s[i].z = rnd(1000.0f) - 500;
             temp_s[i].radius = rnd(100.0f) + 20;
         }
-        HANDLE_ERROR(cudaMemcpyToSymbol(s, temp_s, sizeof(Sphere) * SPHERES));
+        HANDLE_ERROR(cudaMemcpyToSymbol(sphere_object, temp_s, sizeof(Sphere) * NUM_OF_SPHERES));
         free(temp_s);
 
         dim3    grids(DIMENSIONS / 16, DIMENSIONS / 16);
