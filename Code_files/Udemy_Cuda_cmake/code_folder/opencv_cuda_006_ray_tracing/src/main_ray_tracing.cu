@@ -276,9 +276,9 @@ int main()
 
 
 
-    cv::Mat image2_uchar(image1_uchar.cols, image1_uchar.rows, CV_8UC1);
-    cv::Mat image2_ushort(image1_ushort.cols, image1_ushort.rows, CV_16UC1);
-    cv::Mat image2_float(image1_float.cols, image1_float.rows, CV_32FC1);
+    cv::Mat image2_uchar(image1_uchar.cols, image1_uchar.rows, CV_8UC4);
+    //cv::Mat image2_ushort(image1_ushort.cols, image1_ushort.rows, CV_16UC1);
+    //cv::Mat image2_float(image1_float.cols, image1_float.rows, CV_32FC1);
 
     for (int i = 0; i < num_of_frames; i++)
     {
@@ -310,11 +310,11 @@ int main()
         unsigned char* device_outputData1 = NULL;
         unsigned char* device_outputData2 = NULL;
         unsigned int device_outputData_num_of_elements = image1_uchar.rows * image1_uchar.cols;
-        size_t device_outputData_num_of_bytes1 = device_outputData_num_of_elements * sizeof(unsigned char);
+        size_t device_outputData_num_of_bytes1 = device_outputData_num_of_elements * sizeof(unsigned char) * 4;
         HANDLE_ERROR(cudaMalloc((void**)&device_outputData1, device_outputData_num_of_bytes1));
 
-        size_t device_outputData_num_of_bytes2 = device_outputData_num_of_elements * sizeof(unsigned short);
-        HANDLE_ERROR(cudaMalloc((void**)&device_outputData2, device_outputData_num_of_bytes2));
+        //size_t device_outputData_num_of_bytes2 = device_outputData_num_of_elements * sizeof(unsigned short);
+        //HANDLE_ERROR(cudaMalloc((void**)&device_outputData2, device_outputData_num_of_bytes2));
 
 
 
@@ -418,8 +418,8 @@ int main()
         image2_uchar.data = outputData1;
 
         // Copy output vector from GPU buffer to host memory.
-        unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
-        HANDLE_ERROR(cudaMemcpy(outputData2, device_outputData2, device_outputData_num_of_bytes2, cudaMemcpyDeviceToHost));
+        //unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
+        //HANDLE_ERROR(cudaMemcpy(outputData2, device_outputData2, device_outputData_num_of_bytes2, cudaMemcpyDeviceToHost));
         //image2_ushort.data = outputData2;
 
         HANDLE_ERROR(cudaFree(device_inputData1));
@@ -455,14 +455,14 @@ int main()
             print_pixels("image1_uchar", image1_uchar.data, image1_uchar.rows, image1_uchar.cols, PixelType::UCHAR);
             print_pixels("image2_uchar", image2_uchar.data, image2_uchar.rows, image2_uchar.cols, PixelType::UCHAR);
 
-            print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
-            print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT);
+            //print_pixels("image1_ushort", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::USHORT);
+            //print_pixels("image2_ushort", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::USHORT);
 
             //print_pixels("image1_float", image1_ushort.data, image1_ushort.rows, image1_ushort.cols, PixelType::FLOAT);
             //print_pixels("image2_float", image2_ushort.data, image2_ushort.rows, image2_ushort.cols, PixelType::FLOAT);
         }
 
-        int k = cv::waitKey(1); // Wait for a keystroke in the window
+        int k = cv::waitKey(0); // Wait for a keystroke in the window
     }
 
 
