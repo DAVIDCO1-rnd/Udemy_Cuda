@@ -99,11 +99,11 @@ struct Sphere {
         return -INF;
     }
 };
-#define NUM_OF_SPHERES 1
 
-__constant__ Sphere sphere_object[NUM_OF_SPHERES];
 
-__global__ void kernel(unsigned char* ptr) {
+#define NUM_OF_SPHERES 20
+
+__global__ void kernel(Sphere* s, unsigned char* ptr) {
     // map from threadIdx/BlockIdx to pixel position
     int x = threadIdx.x + blockIdx.x * blockDim.x;
     int y = threadIdx.y + blockIdx.y * blockDim.y;
@@ -115,12 +115,12 @@ __global__ void kernel(unsigned char* ptr) {
     float   maxz = -INF;
     for (int i = 0; i < NUM_OF_SPHERES; i++) {
         float   n;
-        float   t = sphere_object[i].hit(ox, oy, &n);
+        float   t = s[i].hit(ox, oy, &n);
         if (t > maxz) {
             float fscale = n;
-            r = sphere_object[i].r * fscale;
-            g = sphere_object[i].g * fscale;
-            b = sphere_object[i].b * fscale;
+            r = s[i].r * fscale;
+            g = s[i].g * fscale;
+            b = s[i].b * fscale;
             maxz = t;
         }
     }
@@ -139,6 +139,8 @@ int main()
     int num_of_frames = 1;
     int width = DIMENSIONS;
     int height = DIMENSIONS;
+    Sphere* s;
+
     //going back from this folder: ./build/code_folder/Section3.3_spotlights/
     //std::string image_path = "../../../images/balloons.jpg";
     cv::Mat image1_uchar;
@@ -259,33 +261,33 @@ int main()
         BlockAndGridDimensions* block_and_grid_dims = CalculateBlockAndGridDimensions(num_of_channels, image_width, image_height);
 
 
-        // allocate temp memory, initialize it, copy to constant
-        // memory on the GPU, then free our temp memory
+        // allocate memory for the Sphere dataset
+        HANDLE_ERROR(cudaMalloc((void**)&s, sizeof(Sphere)* NUM_OF_SPHERES));
         Sphere* temp_s = (Sphere*)malloc(sizeof(Sphere) * NUM_OF_SPHERES);
-        //for (int i = 0; i < NUM_OF_SPHERES; i++) {
-        //    temp_s[i].r = rnd(1.0f);
-        //    temp_s[i].g = rnd(1.0f);
-        //    temp_s[i].b = rnd(1.0f);
-        //    temp_s[i].x = rnd(1000.0f) - 500;
-        //    temp_s[i].y = rnd(1000.0f) - 500;
-        //    temp_s[i].z = rnd(1000.0f) - 500;
-        //    temp_s[i].radius = rnd(100.0f) + 20;
-        //}
         for (int i = 0; i < NUM_OF_SPHERES; i++) {
-            temp_s[i].r = 0.0f;
-            temp_s[i].g = 0.0f;
-            temp_s[i].b = 1.0f;
-            temp_s[i].x = 0.0f;
-            temp_s[i].y = 0.0f;
-            temp_s[i].z = 0.0f;
-            temp_s[i].radius = 80.0f;
+            temp_s[i].r = rnd(1.0f);
+            temp_s[i].g = rnd(1.0f);
+            temp_s[i].b = rnd(1.0f);
+            temp_s[i].x = rnd(1000.0f) - 500;
+            temp_s[i].y = rnd(1000.0f) - 500;
+            temp_s[i].z = rnd(1000.0f) - 500;
+            temp_s[i].radius = rnd(100.0f) + 20;
         }
-        HANDLE_ERROR(cudaMemcpyToSymbol(sphere_object, temp_s, sizeof(Sphere) * NUM_OF_SPHERES));
+        //for (int i = 0; i < NUM_OF_SPHERES; i++) {
+        //    temp_s[i].r = 0.0f;
+        //    temp_s[i].g = 0.0f;
+        //    temp_s[i].b = 1.0f;
+        //    temp_s[i].x = 0.0f;
+        //    temp_s[i].y = 0.0f;
+        //    temp_s[i].z = 0.0f;
+        //    temp_s[i].radius = 80.0f;
+        //}
+        HANDLE_ERROR(cudaMemcpy(s, temp_s, sizeof(Sphere) * NUM_OF_SPHERES, cudaMemcpyHostToDevice));
         free(temp_s);
 
         dim3    grids(DIMENSIONS / 16, DIMENSIONS / 16);
         dim3    threads(16, 16);
-        kernel << <grids, threads >> > (device_outputData1);
+        kernel << <grids, threads >> > (s, device_outputData1);
 
         // Check for any errors launching the kernel
         HANDLE_ERROR(cudaGetLastError());
@@ -309,6 +311,7 @@ int main()
         HANDLE_ERROR(cudaFree(device_input_height));
         HANDLE_ERROR(cudaFree(device_uchar_pixel_size));
         HANDLE_ERROR(cudaFree(device_ushort_pixel_size));
+        HANDLE_ERROR(cudaFree(s));
 #endif //USE_CUDA
 
 
