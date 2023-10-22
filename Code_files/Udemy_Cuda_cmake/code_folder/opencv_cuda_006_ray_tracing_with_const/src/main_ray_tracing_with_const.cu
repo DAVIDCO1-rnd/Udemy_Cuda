@@ -99,7 +99,7 @@ struct Sphere {
         return -INF;
     }
 };
-#define NUM_OF_SPHERES 20
+#define NUM_OF_SPHERES 1
 
 __constant__ Sphere sphere_object[NUM_OF_SPHERES];
 
@@ -262,14 +262,23 @@ int main()
         // allocate temp memory, initialize it, copy to constant
         // memory on the GPU, then free our temp memory
         Sphere* temp_s = (Sphere*)malloc(sizeof(Sphere) * NUM_OF_SPHERES);
+        //for (int i = 0; i < NUM_OF_SPHERES; i++) {
+        //    temp_s[i].r = rnd(1.0f);
+        //    temp_s[i].g = rnd(1.0f);
+        //    temp_s[i].b = rnd(1.0f);
+        //    temp_s[i].x = rnd(1000.0f) - 500;
+        //    temp_s[i].y = rnd(1000.0f) - 500;
+        //    temp_s[i].z = rnd(1000.0f) - 500;
+        //    temp_s[i].radius = rnd(100.0f) + 20;
+        //}
         for (int i = 0; i < NUM_OF_SPHERES; i++) {
-            temp_s[i].r = rnd(1.0f);
-            temp_s[i].g = rnd(1.0f);
-            temp_s[i].b = rnd(1.0f);
-            temp_s[i].x = rnd(1000.0f) - 500;
-            temp_s[i].y = rnd(1000.0f) - 500;
-            temp_s[i].z = rnd(1000.0f) - 500;
-            temp_s[i].radius = rnd(100.0f) + 20;
+            temp_s[i].r = 0.0f;
+            temp_s[i].g = 0.0f;
+            temp_s[i].b = 1.0f;
+            temp_s[i].x = 0.0f;
+            temp_s[i].y = 0.0f;
+            temp_s[i].z = 0.0f;
+            temp_s[i].radius = 80.0f;
         }
         HANDLE_ERROR(cudaMemcpyToSymbol(sphere_object, temp_s, sizeof(Sphere) * NUM_OF_SPHERES));
         free(temp_s);
