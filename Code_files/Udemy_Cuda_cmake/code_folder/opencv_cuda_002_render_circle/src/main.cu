@@ -11,7 +11,7 @@
 #include "cuda_utils.cuh"
 #include "opencv_utils.h"
 
-#define USE_CUDA
+//#define USE_CUDA
 
 bool read_image_from_file = true;
 const int height = 3;
@@ -114,8 +114,8 @@ template<class T> __global__ void render_circle_cuda(unsigned char* inputData, u
 {
     int input_width = device_input_width[0];
     int input_height = device_input_height[0];
-    int output_width = input_height;
-    int output_height = input_width;
+    //int output_width = input_height;
+    //int output_height = input_width;
     int pixel_size = device_pixel_size[0];
 
     int x = threadIdx.x + blockIdx.x * blockDim.x;
@@ -133,22 +133,27 @@ template<class T> __global__ void render_circle_cuda(unsigned char* inputData, u
         float fx = x - input_width / 2;
         float fy = y - input_height / 2;
         float d = sqrtf(fx * fx + fy * fy);
-        unsigned char grey = (unsigned char)(128.0f + 127.0f *
-            cos(d / 10.0f - ticks / 7.0f) /
-            (d / 10.0f + 1.0f));
+        //T grey = (T)(128.0f + 127.0f * cos(d / 10.0f - ticks / 7.0f) / (d / 10.0f + 1.0f));
+        T grey;
+        if (d < 200)
+        {
+            grey = (T)(0.8 * (pow(256, pixel_size) - 1));
+        }
+        else
+        {
+            grey = (T)(0.2 * (pow(256, pixel_size) - 1));
+        }
 
-        unsigned char pixel_value = grey;
+        T pixel_value = grey;
         *((T*)(outputData + current_index_input_data)) = (T)pixel_value;
     }
 }
 #endif //USE_CUDA
 
+#ifndef USE_CUDA
 template <class T>
 void render_circle_cpu(unsigned char* inputData, unsigned char* outputData, int input_width, int input_height, int pixel_size, int ticks)
 {
-    int output_width = input_height;
-    int output_height = input_width;
-
     int i = 0;
     while (i < input_width)
     {
@@ -160,11 +165,18 @@ void render_circle_cpu(unsigned char* inputData, unsigned char* outputData, int 
             float fx = i - input_width / 2;
             float fy = j - input_height / 2;
             float d = sqrtf(fx * fx + fy * fy);
-            unsigned char grey = (unsigned char)(128.0f + 127.0f *
-                cos(d / 10.0f - ticks / 7.0f) /
-                (d / 10.0f + 1.0f));
+            //T grey = (T)(128.0f + 127.0f * cos(d / 10.0f - ticks / 7.0f) / (d / 10.0f + 1.0f));
+            T grey;
+            if (d < 200)
+            {
+                grey = (T)(0.8 * (pow(256, pixel_size) - 1));
+            }
+            else
+            {
+                grey = (T)(0.2 * (pow(256, pixel_size) - 1));
+            }
 
-            unsigned char pixel_value = grey;
+            T pixel_value = grey;
             *((T*)(outputData + current_index_input_data)) = (T)pixel_value;
 
             
@@ -185,6 +197,7 @@ void render_circle_cpu(unsigned char* inputData, unsigned char* outputData, int 
         printf("\n\n");
     }  
 }
+#endif //USE_CUDA
 
 cv::Mat build_image_from_data(uchar image_data[][width], PixelType pixel_type)
 {
@@ -269,6 +282,8 @@ int main()
         ticks = ticks + 1;
 #ifndef USE_CUDA
         render_circle_cpu<unsigned char>(image1_uchar.data, image2_uchar.data, image1_uchar.cols, image1_uchar.rows, (int)PixelType::UCHAR, ticks);
+
+        render_circle_cpu<unsigned short>(image1_ushort.data, image2_ushort.data, image1_ushort.cols, image1_ushort.rows, (int)PixelType::USHORT, ticks);
 #endif
 
 #ifdef USE_CUDA
@@ -370,7 +385,7 @@ int main()
 
 
         render_circle_cuda<unsigned char> << < blocksPerGrid, threadsPerBlock >> > (device_inputData1, device_outputData1, device_input_width, device_input_height, device_uchar_pixel_size, ticks);
-        //render_circle_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size, ticks);
+        render_circle_cuda<unsigned short> << < blocksPerGrid, threadsPerBlock >> > (device_inputData2, device_outputData2, device_input_width, device_input_height, device_ushort_pixel_size, ticks);
 
         // Check for any errors launching the kernel
         HANDLE_ERROR(cudaGetLastError());
@@ -389,7 +404,7 @@ int main()
         // Copy output vector from GPU buffer to host memory.
         unsigned char* outputData2 = (unsigned char*)malloc(device_outputData_num_of_bytes2);
         HANDLE_ERROR(cudaMemcpy(outputData2, device_outputData2, device_outputData_num_of_bytes2, cudaMemcpyDeviceToHost));
-        //image2_ushort.data = outputData2;
+        image2_ushort.data = outputData2;
 
         HANDLE_ERROR(cudaFree(device_inputData1));
         HANDLE_ERROR(cudaFree(device_inputData2));
@@ -414,7 +429,7 @@ int main()
             cv::imshow("resized_image2_uchar", resized_image2_uchar);
 
             //cv::imshow("resized_image1_ushort", resized_image1_ushort);
-            //cv::imshow("resized_image2_ushort", resized_image2_ushort);
+            cv::imshow("resized_image2_ushort", resized_image2_ushort);
 
             //cv::imshow("image1_float", image1_float);
             //cv::imshow("image2_float", image2_float);
