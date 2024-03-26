@@ -4,9 +4,6 @@ set(sources_folder "${CMAKE_CURRENT_SOURCE_DIR}")
 file(GLOB HEADERS_FILES "${includes_folder}/*.h" "${includes_folder}/*.hpp" "${includes_folder}/*.hh")
 file(GLOB SOURCES_FILES "${sources_folder}/*.cpp" "${sources_folder}/*.c" "${sources_folder}/*.cu")
 
-find_package(CUDAToolkit)
-file(GLOB CUDA_LIB_FILES "${CUDAToolkit_LIBRARY_DIR}/*lib")
-
 
 add_executable(${target_name} ${SOURCES_FILES} ${CUDA_SOURCES_FILES} ${HEADERS_FILES})
 enable_language(CUDA)

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.21)
-project(cuda_tutorials VERSION 1.0.0)
+project(cuda_samples_cmake VERSION 1.0.0)
 
 option(VIPER_CONFIG_VERBOSE "Use verbose detail when configuring" ON)
 option(VIPER_ENABLE_CUDA_PROFILER "Enable NVIDIA nSight profiler support" ON)
@@ -55,6 +55,10 @@ message(STATUS "OpenCV_main_folder = ${OpenCV_main_folder}")
 message(STATUS "CMAKE_BINARY_DIR = ${CMAKE_BINARY_DIR}")
 message(STATUS "CUDA_BINARY_DIR_OUTPUT = ${CUDA_BINARY_DIR_OUTPUT}")
 message(STATUS "CMAKE_SOURCE_DIR = ${CMAKE_SOURCE_DIR}")
+
+
+find_package(CUDAToolkit)
+file(GLOB CUDA_LIB_FILES "${CUDAToolkit_LIBRARY_DIR}/*lib")
 
 set(SRC_FOLDERS ${CMAKE_SOURCE_DIR}/5_Simulations)
 set(UTILS_SRC_FOLDER ${CMAKE_SOURCE_DIR}/utils/src)
