@@ -1,11 +1,8 @@
 get_filename_component(target_name ${CMAKE_CURRENT_SOURCE_DIR} NAME)
-set(includes_folder "${CMAKE_CURRENT_SOURCE_DIR}/include")
+set(includes_folder "${CMAKE_CURRENT_SOURCE_DIR}")
 set(sources_folder "${CMAKE_CURRENT_SOURCE_DIR}")
 file(GLOB HEADERS_FILES "${includes_folder}/*.h" "${includes_folder}/*.hpp" "${includes_folder}/*.hh")
 file(GLOB SOURCES_FILES "${sources_folder}/*.cpp" "${sources_folder}/*.c" "${sources_folder}/*.cu")
-
-set(CUDA_TOOLKIT_ROOT_DIR "C:/Program Files/NVIDIA GPU Computing Toolkit/CUDA/v10.2/bin")
-# find_package(CUDA 10.2 REQUIRED)
 
 
 add_executable(${target_name} ${SOURCES_FILES} ${CUDA_SOURCES_FILES} ${HEADERS_FILES})
