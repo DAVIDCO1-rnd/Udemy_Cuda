@@ -1,5 +1,5 @@
-cmake_minimum_required(VERSION 3.21)
-project(cuda_samples_cmake VERSION 1.0.0)
+cmake_minimum_required(VERSION 3.27)
+PROJECT(cuda_samples_cmake LANGUAGES CUDA CXX)
 
 option(VIPER_CONFIG_VERBOSE "Use verbose detail when configuring" ON)
 option(VIPER_ENABLE_CUDA_PROFILER "Enable NVIDIA nSight profiler support" ON)

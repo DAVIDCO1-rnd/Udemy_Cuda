@@ -10,21 +10,17 @@ message(STATUS "CUDAToolkit_LIBRARY_DIR = ${CUDAToolkit_LIBRARY_DIR}")
 message(STATUS "CUDA_LIB_FILES = ${CUDA_LIB_FILES}")
 
 add_executable(${target_name} ${SOURCES_FILES} ${CUDA_SOURCES_FILES} ${HEADERS_FILES})
-enable_language(CUDA)
+#enable_language(CUDA)
 set_target_properties(${target_name} PROPERTIES
     CUDA_STANDARD 11
     CUDA_STANDARD_REQUIRED ON
     CUDA_SEPARABLE_COMPILATION ON
     CUDA_ARCHITECTURES "50"
 )
-if(VIPER_ENABLE_CUDA_PROFILER)
-	target_compile_definitions(${target_name} PRIVATE ENABLE_CUDA_PROFILER=1)
-endif()
+
+#set_target_properties(${target_name} PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON RUNTIME_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
+
 target_include_directories(${target_name} PUBLIC ${includes_folder})
-
-
-
-
 
 target_link_libraries(${target_name} PUBLIC 
 	common
